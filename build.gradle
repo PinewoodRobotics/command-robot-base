@@ -1,6 +1,7 @@
 plugins {
     id "java"
     id "edu.wpi.first.GradleRIO" version "2024.3.2"
+    id "co.uzzu.dotenv.gradle" version "4.0.0" // Plugin for .env file support
 }
 
 java {
@@ -8,28 +9,29 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
 }
 
+ext {
+    alreadyAdded = []
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url 'https://jitpack.io'
+    }
+}
+
 def ROBOT_MAIN_CLASS = "frc.robot.Main"
 
-// Define my targets (RoboRIO) and artifacts (deployable files)
-// This is added by GradleRIO's backing project DeployUtils.
+// Define deploy target and artifacts
 deploy {
     targets {
         roborio(getTargetTypeClass('RoboRIO')) {
-            // Team number is loaded either from the .wpilib/wpilib_preferences.json
-            // or from command line. If not found an exception will be thrown.
-            // You can use getTeamOrDefault(team) instead of getTeamNumber if you
-            // want to store a team number in this file.
             team = project.frc.getTeamNumber()
             debug = project.frc.getDebugOrDefault(false)
 
             artifacts {
-                // First part is artifact name, 2nd is artifact type
-                // getTargetTypeClass is a shortcut to get the class type using a string
+                frcJava(getArtifactTypeClass('FRCJavaArtifact')) {}
 
-                frcJava(getArtifactTypeClass('FRCJavaArtifact')) {
-                }
-
-                // Static files artifact
                 frcStaticFileDeploy(getArtifactTypeClass('FileTreeArtifact')) {
                     files = project.fileTree('src/main/deploy')
                     directory = '/home/lvuser/deploy'
@@ -41,14 +43,11 @@ deploy {
 
 def deployArtifact = deploy.targets.roborio.artifacts.frcJava
 
-// Set to true to use debug for JNI.
 wpi.java.debugJni = false
 
-// Set this to true to enable desktop support.
 def includeDesktopSupport = false
 
-// Defining my dependencies. In this case, WPILib (+ friends), and vendor libraries.
-// Also defines JUnit 5.
+// Define project dependencies
 dependencies {
     implementation wpi.java.deps.wpilib()
     implementation wpi.java.vendor.java()
@@ -67,6 +66,9 @@ dependencies {
     nativeRelease wpi.java.vendor.jniRelease(wpi.platforms.desktop)
     simulationRelease wpi.sim.enableRelease()
 
+    // addGithubRepoJitPack("lolhol", "KeybindConfigurator", "0.2") // Example usage
+
+
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
@@ -76,13 +78,11 @@ test {
     systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'true'
 }
 
-// Simulation configuration (e.g. environment variables).
+// Simulation settings
 wpi.sim.addGui().defaultEnabled = true
 wpi.sim.addDriverstation()
 
-// Setting up my Jar File. In this case, adding all libraries into the main jar ('fat jar')
-// in order to make them all available at runtime. Also adding the manifest so WPILib
-// knows where to look for our Robot Class.
+// Create a fat jar (including all dependencies) and set the manifest for WPILib
 jar {
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
     from sourceSets.main.allSource
@@ -90,12 +90,72 @@ jar {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
-// Configure jar and deploy tasks
+// Set the jar task for deployment
 deployArtifact.jarTask = jar
 wpi.java.configureExecutableTasks(jar)
 wpi.java.configureTestTasks(test)
 
-// Configure string concat to always inline compile
+// Configure the string concatenation setting for inline compilation
 tasks.withType(JavaCompile) {
     options.compilerArgs.add '-XDstringConcat=inline'
+}
+
+// ---------------- Helper functions ----------------
+
+String toJitpack(String user, String repo) {
+    return toJitpack(user, repo, "main-SNAPSHOT")
+}
+
+String toJitpack(String user, String repo, String version) {
+    return "com.github.${user}:${repo}:${version}"
+}
+
+String toGithub(String user, String repo) {
+    return "https://github.com/${user}/${repo}.git"
+}
+
+def addGithubRepoJitPack(String user, String repo, String version) {
+    addGithubRepo(user, repo, "com.github.${user}:${repo}:${version}")
+}
+
+def addGithubRepo(String user, String repo, String nonProductionImplementationString) {
+    addGithubRepo(user, repo, nonProductionImplementationString, env.allVariables().get("PROD_FLAG") == "true")
+}
+
+def addGithubRepo(String user, String repo, String nonProductionImplementationString, boolean isProduction) {
+    if (isProduction) {
+        println("")
+        println("Building ${user}/${repo}")
+        println("")
+        def output = new ByteArrayOutputStream()
+        exec {
+            commandLine "python3", "scripts/clone_and_build_repos.py", toGithub(user, repo)
+            standardOutput = output
+        }
+
+        def brightYellow = '\u001B[93m'
+
+        def reset = '\u001B[0m'
+
+        println("${brightYellow}${output.toString()}${reset}")
+        println("")
+        println("")
+        println("")
+
+        def jarFiles = fileTree(dir: "lib/build", include: '*.jar').filter { jarFile ->
+            !alreadyAdded.contains(jarFile)
+        }
+
+        dependencies {
+            implementation files(jarFiles)
+        }
+
+        alreadyAdded.addAll(jarFiles)
+
+        return;
+    }
+
+    dependencies {
+        implementation nonProductionImplementationString
+    }
 }
