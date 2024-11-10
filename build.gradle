@@ -36,6 +36,11 @@ deploy {
                     files = project.fileTree('src/main/deploy')
                     directory = '/home/lvuser/deploy'
                 }
+
+                frcStaticFileDeploy(getArtifactTypeClass('FileTreeArtifact')) {
+                    files = project.fileTree('config')
+                    directory = '/home/lvuser/config'
+                }
             }
         }
     }
@@ -66,9 +71,9 @@ dependencies {
     nativeRelease wpi.java.vendor.jniRelease(wpi.platforms.desktop)
     simulationRelease wpi.sim.enableRelease()
 
-    // addGithubRepoJitPack("lolhol", "KeybindConfigurator", "0.2") // Example usage
+    addGithubRepoJitPack("lolhol", "KeybindConfigurator", "0.2")
 
-
+    implementation 'com.moandjiezana.toml:toml4j:0.7.2'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
@@ -97,7 +102,7 @@ wpi.java.configureTestTasks(test)
 
 // Configure the string concatenation setting for inline compilation
 tasks.withType(JavaCompile) {
-    options.compilerArgs.add '-XDstringConcat=inline'
+    options.compilerArgs.addAll(['-XDstringConcat=inline', '-Xlint:unchecked'])
 }
 
 // ---------------- Helper functions ----------------
@@ -142,8 +147,11 @@ def addGithubRepo(String user, String repo, String nonProductionImplementationSt
         println("")
         println("")
 
-        def jarFiles = fileTree(dir: "lib/build", include: '*.jar').filter { jarFile ->
-            !alreadyAdded.contains(jarFile)
+        def jarFiles = fileTree(dir: "lib/build", include: "**/*.jar")
+        println("Adding to dependencies:")
+
+        jarFiles.each { jarFile ->
+            println(jarFile.path)
         }
 
         dependencies {
@@ -151,11 +159,9 @@ def addGithubRepo(String user, String repo, String nonProductionImplementationSt
         }
 
         alreadyAdded.addAll(jarFiles)
-
-        return;
-    }
-
-    dependencies {
-        implementation nonProductionImplementationString
+    } else {
+        dependencies {
+            implementation nonProductionImplementationString
+        }
     }
 }
