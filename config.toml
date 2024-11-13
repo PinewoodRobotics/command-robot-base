@@ -1,0 +1,4 @@
+[keybind-configurator]
+github = "https://github.com/frc5024/2024-robot-code"
+branch = "main"
+use_local = false

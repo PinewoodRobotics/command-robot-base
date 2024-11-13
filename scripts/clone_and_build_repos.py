@@ -4,6 +4,7 @@ import subprocess
 import shutil
 import glob
 
+
 def main():
     if len(sys.argv) <= 1:
         print("No Github libs found! Exiting...")
@@ -49,6 +50,7 @@ def main():
                 print("No .jar files found in build/libs!")
         else:
             print(f"No build.gradle found in {name}. Skipping this repository!")
+
 
 if __name__ == "__main__":
     main()
