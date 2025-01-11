@@ -1,7 +1,7 @@
 plugins {
     id "java"
     id "edu.wpi.first.GradleRIO" version "2024.3.2"
-    id "co.uzzu.dotenv.gradle" version "4.0.0" // Plugin for .env file support
+    id "groovy" // Required for ConfigSlurper
 }
 
 java {
@@ -66,12 +66,11 @@ dependencies {
     nativeRelease wpi.java.vendor.jniRelease(wpi.platforms.desktop)
     simulationRelease wpi.sim.enableRelease()
 
-    // addGithubRepoJitPack("lolhol", "KeybindConfigurator", "0.2") // Example usage
-
-
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
+
+buildDynamically("./config.ini")
 
 test {
     useJUnitPlatform()
@@ -100,62 +99,18 @@ tasks.withType(JavaCompile) {
     options.compilerArgs.add '-XDstringConcat=inline'
 }
 
-// ---------------- Helper functions ----------------
-
-String toJitpack(String user, String repo) {
-    return toJitpack(user, repo, "main-SNAPSHOT")
-}
-
-String toJitpack(String user, String repo, String version) {
-    return "com.github.${user}:${repo}:${version}"
-}
-
-String toGithub(String user, String repo) {
-    return "https://github.com/${user}/${repo}.git"
-}
-
-def addGithubRepoJitPack(String user, String repo, String version) {
-    addGithubRepo(user, repo, "com.github.${user}:${repo}:${version}")
-}
-
-def addGithubRepo(String user, String repo, String nonProductionImplementationString) {
-    addGithubRepo(user, repo, nonProductionImplementationString, env.allVariables().get("PROD_FLAG") == "true")
-}
-
-def addGithubRepo(String user, String repo, String nonProductionImplementationString, boolean isProduction) {
-    if (isProduction) {
-        println("")
-        println("Building ${user}/${repo}")
-        println("")
-        def output = new ByteArrayOutputStream()
+def buildDynamically(configFilePath) {
         exec {
-            commandLine "python3", "scripts/clone_and_build_repos.py", toGithub(user, repo)
-            standardOutput = output
-        }
+        commandLine "python3", "scripts/clone_and_build_repos.py", "--config-file-path", configFilePath
+        standardOutput = new ByteArrayOutputStream()
+        errorOutput = new ByteArrayOutputStream()
+    }
 
-        def brightYellow = '\u001B[93m'
+    def jarFiles = fileTree(dir: "lib/build", include: '*.jar')
 
-        def reset = '\u001B[0m'
-
-        println("${brightYellow}${output.toString()}${reset}")
-        println("")
-        println("")
-        println("")
-
-        def jarFiles = fileTree(dir: "lib/build", include: '*.jar').filter { jarFile ->
-            !alreadyAdded.contains(jarFile)
-        }
-
+    project.afterEvaluate {
         dependencies {
             implementation files(jarFiles)
         }
-
-        alreadyAdded.addAll(jarFiles)
-
-        return;
-    }
-
-    dependencies {
-        implementation nonProductionImplementationString
     }
 }
