@@ -3,53 +3,81 @@ import os
 import subprocess
 import shutil
 import glob
+import argparse
+import configparser
+import logging
+import stat
+
+
+def check_folders():
+    if (
+        not os.path.exists("lib")
+        or not os.path.isdir("lib/build")
+        or not os.path.isdir("lib/vendor")
+    ):
+        os.makedirs("lib/build", exist_ok=True)
+        os.makedirs("lib/vendor", exist_ok=True)
+
+
+def delete_folder(folder_name):
+    if os.path.exists(folder_name):
+        shutil.rmtree(folder_name)
 
 
 def main():
-    if len(sys.argv) <= 1:
-        print("No Github libs found! Exiting...")
-        exit(0)
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    )
 
-    base_dir = os.getcwd()
-    lib_dir = os.path.join(base_dir, "lib")
-    vendor_dir = os.path.join(lib_dir, "vendor")
-    build_dir = os.path.join(lib_dir, "build")
+    parser = argparse.ArgumentParser(description="Clone and build GitHub libraries")
+    parser.add_argument("--config-file-path", type=str, help="Path to the config file")
+    args = parser.parse_args()
 
-    os.makedirs(lib_dir, exist_ok=True)
-    os.makedirs(vendor_dir, exist_ok=True)
-    os.makedirs(build_dir, exist_ok=True)
+    config = configparser.ConfigParser()
+    config.read(args.config_file_path)
 
-    for lib in sys.argv[1:]:
-        print("Cloning " + lib)
+    check_folders()
 
-        os.chdir(lib_dir)
-        os.chdir(vendor_dir)
+    os.chdir("lib/vendor")
 
-        name = lib.split("/")[-1].replace(".git", "")
-        print(f"Repository name: {name}")
-
-        if not name in os.listdir("."):
-            subprocess.run(["git", "clone", lib])
-
-            os.chdir(name)
-            subprocess.run(["git", "checkout", "master"])
-            subprocess.run(["git", "pull"])
+    for section in config.sections():
+        if config.getboolean(section, "build_dynamically"):
+            logging.info(f"Building {section}")
         else:
-            os.chdir(name)
+            logging.info(f"Skipping {section}")
+            continue
 
-        if "build.gradle" in os.listdir("."):
-            subprocess.run(["./gradlew", "clean"])
-            subprocess.run(["./gradlew", "build"])
+        github_url = config.get(section, "github")
+        use_branch = config.has_option(section, "branch")
 
-            jar_files = glob.glob("build/libs/*.jar")
-            if jar_files:
-                for jar_file in jar_files:
-                    shutil.copy(jar_file, os.path.join(base_dir, "lib/build"))
-                    print(f"Copied {jar_file} to {os.path.join(base_dir, 'lib/build')}")
-            else:
-                print("No .jar files found in build/libs!")
+        if not os.path.exists(section):
+            print(f"Cloning {section}")
+            subprocess.run(
+                ["git", "clone", github_url, "--single-branch", section]
+                + (
+                    []
+                    if not use_branch
+                    else ["--branch", config.get(section, "branch")]
+                )
+            )
         else:
-            print(f"No build.gradle found in {name}. Skipping this repository!")
+            logging.info(f"{section} already exists. Building from existing repo.")
+
+        os.chdir(section)
+
+        out = subprocess.run(["./gradlew", "build"], capture_output=True, text=True)
+        print(out.stdout)
+        if out.returncode != 0:
+            logging.error(f"Failed to build {section}:\n{out.stderr}")
+            exit(1)
+        else:
+            logging.info(f"Successfully built {section}")
+
+        build_libs_path = os.path.join("build", "libs")
+        for jar_file in glob.glob(os.path.join(build_libs_path, "*.jar")):
+            shutil.copy(jar_file, "../../build")
+
+        os.chdir("../..")
 
 
 if __name__ == "__main__":
