@@ -1,7 +1,6 @@
 package frc.robot.subsystems;
 
 import com.kauailabs.navx.frc.AHRS;
-
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.networktables.GenericEntry;
@@ -10,8 +9,9 @@ import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.SwerveConstants;
-import frc.robot.util.MathFunc;
+import frc.robot.util.CustomMath;
 
+// NO LONGER USED BTW
 public class SwerveSubsystem extends SubsystemBase {
 
   private final SwerveModule m_frontLeftSwerveModule = new SwerveModule(
@@ -91,19 +91,19 @@ public class SwerveSubsystem extends SubsystemBase {
    */
   public void joystickDrive(double x, double y, double r) {
     x =
-      MathFunc.deadband(
+      CustomMath.deadband(
         x,
         SwerveConstants.kXSpeedDeadband,
         SwerveConstants.kXSpeedMinValue
       );
     y =
-      MathFunc.deadband(
+      CustomMath.deadband(
         y,
         SwerveConstants.kYSpeedDeadband,
         SwerveConstants.kYSpeedMinValue
       );
     r =
-      MathFunc.deadband(
+      CustomMath.deadband(
         r,
         SwerveConstants.kRotDeadband,
         SwerveConstants.kRotMinValue
@@ -132,7 +132,10 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     if (SwerveConstants.kPIDDirection && pidDirection) {
-      desiredDirection = MathFunc.putWithinHalfToHalf(desiredDirection + (r * SwerveConstants.kDirectionMultiplier));
+      desiredDirection =
+        CustomMath.putWithinHalfToHalf(
+          desiredDirection + (r * SwerveConstants.kDirectionMultiplier)
+        );
       r = m_directionPIDController.calculate(getGyroAngle(), desiredDirection);
     }
 
@@ -159,7 +162,6 @@ public class SwerveSubsystem extends SubsystemBase {
    * @param tempSpeedMultiplier The final speed to multiply all of the outputs by
    */
   public void drive(double x, double y, double r, double tempSpeedMultiplier) {
-
     r *= SwerveConstants.kRotationSpeedMultiplier;
 
     //dimensions required for doing math
@@ -181,7 +183,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
     //Because wheel outputs should be from -1 to 1, desaturates all of the wheels speeds if any
     //of them exceed +-1, while maintaining the ratio between the wheels.
-    double denominator = MathFunc.max(
+    double denominator = CustomMath.max(
       Math.abs(frontLeftSpeed),
       Math.abs(frontRightSpeed),
       Math.abs(rearLeftSpeed),
@@ -253,7 +255,7 @@ public class SwerveSubsystem extends SubsystemBase {
     m_gyro.reset();
     m_gyro.setAngleAdjustment(0);
     desiredDirection = 0;
-    
+
     m_frontLeftSwerveModule.reset();
     m_frontRightSwerveModule.reset();
     m_rearLeftSwerveModule.reset();
@@ -261,7 +263,7 @@ public class SwerveSubsystem extends SubsystemBase {
   }
 
   public double getGyroAngle() {
-    return MathFunc.putWithinHalfToHalf(m_gyro.getAngle() / 360.0);
+    return CustomMath.putWithinHalfToHalf(m_gyro.getAngle() / 360.0);
   }
 
   private void createShuffleboardTab() {

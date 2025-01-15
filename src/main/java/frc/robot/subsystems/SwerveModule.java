@@ -9,15 +9,15 @@ import com.revrobotics.CANSparkLowLevel.MotorType;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkPIDController;
-
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import frc.robot.Constants.SwerveConstants;
-import frc.robot.util.MathFunc;
+import frc.robot.util.CustomMath;
 
+// NO LONGER USED BTW
 public class SwerveModule {
 
   // the driving electronics
@@ -35,30 +35,26 @@ public class SwerveModule {
   private String sb_abbreviation;
   private ShuffleboardTab sb_tab;
 
-  public double kDriveP = SwerveConstants.kDriveP,
-      kDriveI = SwerveConstants.kDriveI,
-      kDriveD = SwerveConstants.kDriveD,
-      kDriveIZ = SwerveConstants.kDriveIZ,
-      kDriveFF = SwerveConstants.kDriveFF;
+  public double kDriveP = SwerveConstants.kDriveP, kDriveI =
+    SwerveConstants.kDriveI, kDriveD = SwerveConstants.kDriveD, kDriveIZ =
+    SwerveConstants.kDriveIZ, kDriveFF = SwerveConstants.kDriveFF;
 
-  public double kTurnP = SwerveConstants.kTurnP,
-      kTurnI = SwerveConstants.kTurnI,
-      kTurnD = SwerveConstants.kTurnD,
-      kTurnIZ = SwerveConstants.kTurnIZ,
-      kTurnFF = SwerveConstants.kTurnFF;
+  public double kTurnP = SwerveConstants.kTurnP, kTurnI =
+    SwerveConstants.kTurnI, kTurnD = SwerveConstants.kTurnD, kTurnIZ =
+    SwerveConstants.kTurnIZ, kTurnFF = SwerveConstants.kTurnFF;
 
-  public GenericEntry sb_kDriveP, sb_kDriveI, sb_kDriveD, sb_kDriveIZ, sb_kDriveFF, sb_kTurnP, sb_kTurnI, sb_kTurnD,
-      sb_kTurnIZ, sb_kTurnFF, sb_speed, sb_angle, sb_m_turnRelativeEncoderAngle, sb_turnCANcoderAngle;
+  public GenericEntry sb_kDriveP, sb_kDriveI, sb_kDriveD, sb_kDriveIZ, sb_kDriveFF, sb_kTurnP, sb_kTurnI, sb_kTurnD, sb_kTurnIZ, sb_kTurnFF, sb_speed, sb_angle, sb_m_turnRelativeEncoderAngle, sb_turnCANcoderAngle;
 
   public SwerveModule(
-      int driveMotorChannel,
-      boolean driveMotorReversed,
-      int turnMotorChannel,
-      boolean turnMotorReversed,
-      int CANCoderEncoderChannel,
-      SensorDirectionValue CANCoderDirection,
-      double CANCoderMagnetOffset,
-      String abbreviation) {
+    int driveMotorChannel,
+    boolean driveMotorReversed,
+    int turnMotorChannel,
+    boolean turnMotorReversed,
+    int CANCoderEncoderChannel,
+    SensorDirectionValue CANCoderDirection,
+    double CANCoderMagnetOffset,
+    String abbreviation
+  ) {
     // setting up the drive motor controller
     m_driveMotor = new CANSparkMax(driveMotorChannel, MotorType.kBrushless);
     m_driveRelativeEncoder = m_driveMotor.getEncoder();
@@ -72,7 +68,8 @@ public class SwerveModule {
     turnCANcoder = new CANcoder(CANCoderEncoderChannel);
     CANcoderConfiguration config = new CANcoderConfiguration();
     config.MagnetSensor.MagnetOffset = -CANCoderMagnetOffset;
-    config.MagnetSensor.AbsoluteSensorRange = AbsoluteSensorRangeValue.Signed_PlusMinusHalf;
+    config.MagnetSensor.AbsoluteSensorRange =
+      AbsoluteSensorRangeValue.Signed_PlusMinusHalf;
     config.MagnetSensor.SensorDirection = CANCoderDirection;
     turnCANcoder.getConfigurator().apply(config);
 
@@ -97,13 +94,16 @@ public class SwerveModule {
     m_turnPIDController.setPositionPIDWrappingMinInput(-0.5);
     m_turnPIDController.setPositionPIDWrappingMaxInput(0.5);
     m_turnPIDController.setOutputRange(
-        SwerveConstants.kTurnMinOutput,
-        SwerveConstants.kTurnMaxOutput);
+      SwerveConstants.kTurnMinOutput,
+      SwerveConstants.kTurnMaxOutput
+    );
     m_turnRelativeEncoder.setPosition(
-        turnCANcoder.getAbsolutePosition().getValueAsDouble() /
-            SwerveConstants.kTurnConversionFactor);
+      turnCANcoder.getAbsolutePosition().getValueAsDouble() /
+      SwerveConstants.kTurnConversionFactor
+    );
     m_turnRelativeEncoder.setPositionConversionFactor(
-        SwerveConstants.kTurnConversionFactor);
+      SwerveConstants.kTurnConversionFactor
+    );
 
     // custom function to set up the Shuffleboard tab
     createShuffleboardTab(abbreviation);
@@ -112,7 +112,7 @@ public class SwerveModule {
   /**
    * Sends the speed and angle commands to the swerve module with customizable
    * speed.
-   * 
+   *
    * @param speed The desired speed. Domain: [-1, 1]
    * @param angle The desired angle. Domain: (-0.5, 0.5]
    */
@@ -123,7 +123,7 @@ public class SwerveModule {
   /**
    * Sends the speed and angle commands to the swerve module with customizable
    * speed.
-   * 
+   *
    * @param speed The desired speed. Domain: [-1, 1]
    * @param angle The desired angle. Domain: (-0.5, 0.5]
    */
@@ -132,9 +132,10 @@ public class SwerveModule {
       // if the opposite direction is closer to the current angle, flip the angle and
       // the speed
       double[] optimizedState = optimize(
-          speed,
-          angle,
-          m_turnRelativeEncoder.getPosition());
+        speed,
+        angle,
+        m_turnRelativeEncoder.getPosition()
+      );
       speed = optimizedState[0];
       angle = optimizedState[1];
     }
@@ -154,32 +155,37 @@ public class SwerveModule {
    */
   public SwerveModulePosition getPosition() {
     return new SwerveModulePosition(
-        m_driveRelativeEncoder.getPosition() * SwerveConstants.kWheelDiameterMeters,
-        new Rotation2d(m_turnRelativeEncoder.getPosition() * 2 * Math.PI));
+      m_driveRelativeEncoder.getPosition() *
+      SwerveConstants.kWheelDiameterMeters,
+      new Rotation2d(m_turnRelativeEncoder.getPosition() * 2 * Math.PI)
+    );
   }
 
   public void reset() {
     m_turnRelativeEncoder.setPosition(
-        turnCANcoder.getAbsolutePosition().getValueAsDouble());
+      turnCANcoder.getAbsolutePosition().getValueAsDouble()
+    );
   }
 
   /**
    * If the opposite angle is closer to the desired one, returns a reversed speed
    * and a flipped angle.
-   * 
+   *
    * @param speed        the speed the drive motor should be running at
    * @param angle        the angle the turn motor should reach
    * @param encoderAngle the current turn encoder's angle
    * @return [The optimized speed, The optimized angle]
    */
   private double[] optimize(double speed, double angle, double encoderAngle) {
-    encoderAngle = MathFunc.putWithinHalfToHalf(encoderAngle);
-    if (Math.abs(angle - encoderAngle) < 0.25 ||
-        Math.abs(angle - encoderAngle) > 0.75) {
+    encoderAngle = CustomMath.putWithinHalfToHalf(encoderAngle);
+    if (
+      Math.abs(angle - encoderAngle) < 0.25 ||
+      Math.abs(angle - encoderAngle) > 0.75
+    ) {
       return new double[] { speed, angle };
     }
 
-    return new double[] { -speed, MathFunc.putWithinHalfToHalf(angle + 0.5) };
+    return new double[] { -speed, CustomMath.putWithinHalfToHalf(angle + 0.5) };
   }
 
   private void createShuffleboardTab(String abbreviation) {
@@ -210,7 +216,8 @@ public class SwerveModule {
     sb_angle = sb_tab.add("angle", 0).getEntry();
 
     // for the reported angles from the encoders with the sparkMax
-    sb_m_turnRelativeEncoderAngle = sb_tab.add("turnEncoderAngle", 0).getEntry();
+    sb_m_turnRelativeEncoderAngle =
+      sb_tab.add("turnEncoderAngle", 0).getEntry();
     sb_turnCANcoderAngle = sb_tab.add("turnCANcoderAngle", 0).getEntry();
   }
 
@@ -218,8 +225,11 @@ public class SwerveModule {
     sb_speed.setDouble(speed);
     sb_angle.setDouble(angle);
 
-    sb_m_turnRelativeEncoderAngle.setDouble(m_turnRelativeEncoder.getPosition());
+    sb_m_turnRelativeEncoderAngle.setDouble(
+      m_turnRelativeEncoder.getPosition()
+    );
     sb_turnCANcoderAngle.setDouble(
-        turnCANcoder.getAbsolutePosition().getValueAsDouble());
+      turnCANcoder.getAbsolutePosition().getValueAsDouble()
+    );
   }
 }

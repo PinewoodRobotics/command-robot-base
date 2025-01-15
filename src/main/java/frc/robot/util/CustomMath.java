@@ -4,7 +4,7 @@ package frc.robot.util;
  * @note MathFun = Math Functions
  * @apiNote this is the file where all of the math functions go
  */
-public class MathFunc {
+public class CustomMath {
 
   /**
    * @param x the X position on the graph
@@ -45,6 +45,7 @@ public class MathFunc {
 
     return m;
   }
+
   /**
    * Deadbands joystick input, then scales it from the deadband to 1. Ask Jared for clarification.
    * @param input the joystick input, [0, 1]
@@ -72,7 +73,6 @@ public class MathFunc {
   }
 
   public static double putWithinHalfToHalf(double in) {
-    
     while (in > 0.5) {
       in -= 1;
     }
