@@ -24,24 +24,21 @@ public class RobotWheelMover extends WheelMover {
 
   private CANcoder turnCANcoder;
 
-  public double kDriveP = SwerveConstants.kDriveP, kDriveI =
-    SwerveConstants.kDriveI, kDriveD = SwerveConstants.kDriveD, kDriveIZ =
-    SwerveConstants.kDriveIZ, kDriveFF = SwerveConstants.kDriveFF;
+  public double kDriveP = SwerveConstants.kDriveP, kDriveI = SwerveConstants.kDriveI, kDriveD = SwerveConstants.kDriveD,
+      kDriveIZ = SwerveConstants.kDriveIZ, kDriveFF = SwerveConstants.kDriveFF;
 
-  public double kTurnP = SwerveConstants.kTurnP, kTurnI =
-    SwerveConstants.kTurnI, kTurnD = SwerveConstants.kTurnD, kTurnIZ =
-    SwerveConstants.kTurnIZ, kTurnFF = SwerveConstants.kTurnFF;
+  public double kTurnP = SwerveConstants.kTurnP, kTurnI = SwerveConstants.kTurnI, kTurnD = SwerveConstants.kTurnD,
+      kTurnIZ = SwerveConstants.kTurnIZ, kTurnFF = SwerveConstants.kTurnFF;
 
   public RobotWheelMover(
-    int driveMotorChannel,
-    boolean driveMotorReversed,
-    int turnMotorChannel,
-    boolean turnMotorReversed,
-    int CANCoderEncoderChannel,
-    SensorDirectionValue CANCoderDirection,
-    double CANCoderMagnetOffset,
-    String abbreviation
-  ) {
+      int driveMotorChannel,
+      boolean driveMotorReversed,
+      int turnMotorChannel,
+      boolean turnMotorReversed,
+      int CANCoderEncoderChannel,
+      SensorDirectionValue CANCoderDirection,
+      double CANCoderMagnetOffset,
+      String abbreviation) {
     // setting up the drive motor controller
     m_driveMotor = new CANSparkMax(driveMotorChannel, MotorType.kBrushless);
 
@@ -54,8 +51,7 @@ public class RobotWheelMover extends WheelMover {
     turnCANcoder = new CANcoder(CANCoderEncoderChannel);
     CANcoderConfiguration config = new CANcoderConfiguration();
     config.MagnetSensor.MagnetOffset = -CANCoderMagnetOffset;
-    config.MagnetSensor.AbsoluteSensorRange =
-      AbsoluteSensorRangeValue.Signed_PlusMinusHalf;
+    config.MagnetSensor.AbsoluteSensorRange = AbsoluteSensorRangeValue.Signed_PlusMinusHalf;
     config.MagnetSensor.SensorDirection = CANCoderDirection;
     turnCANcoder.getConfigurator().apply(config);
 
@@ -75,29 +71,30 @@ public class RobotWheelMover extends WheelMover {
     m_turnPIDController.setPositionPIDWrappingMinInput(-0.5);
     m_turnPIDController.setPositionPIDWrappingMaxInput(0.5);
     m_turnPIDController.setOutputRange(
-      SwerveConstants.kTurnMinOutput,
-      SwerveConstants.kTurnMaxOutput
-    );
+        SwerveConstants.kTurnMinOutput,
+        SwerveConstants.kTurnMaxOutput);
     m_turnRelativeEncoder.setPosition(
-      turnCANcoder.getAbsolutePosition().getValueAsDouble() /
-      SwerveConstants.kTurnConversionFactor
-    );
+        turnCANcoder.getAbsolutePosition().getValueAsDouble() /
+            SwerveConstants.kTurnConversionFactor);
     m_turnRelativeEncoder.setPositionConversionFactor(
-      SwerveConstants.kTurnConversionFactor
-    );
+        SwerveConstants.kTurnConversionFactor);
   }
 
   @Override
   public void drive(Vec2 vector, double finalSpeedMultiplier) {
-    m_driveMotor.set(CustomMath.min(vector.getModulo(), 1.0, -1.0));
+    m_driveMotor.set(vector.getModulo() * finalSpeedMultiplier);
     m_turnPIDController.setReference(
-      vector.getAngle() / Math.PI, // wrap this angle from -pi <-> pi to -1 <-> 1
-      CANSparkMax.ControlType.kPosition
-    );
+        vector.getAngle() / (2 * Math.PI), // wrap this angle from -pi <-> pi to -1 <-> 1
+        CANSparkMax.ControlType.kPosition);
   }
 
   @Override
-  public void drive(double angle, double speed) {}
+  public void drive(double angle, double speed) {
+    m_driveMotor.set(speed);
+    m_turnPIDController.setReference(
+        angle / (2 * Math.PI), // wrap this angle from -pi <-> pi to -1 <-> 1
+        CANSparkMax.ControlType.kPosition);
+  }
 
   @Override
   public double getCurrentAngle() {

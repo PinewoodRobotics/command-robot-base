@@ -4,8 +4,10 @@
 
 package frc.robot;
 
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.Constants.SwerveConstants;
 import frc.robot.hardware.RobotWheelMover;
@@ -19,39 +21,45 @@ import org.pwrup.util.Wheel;
 
 public class RobotContainer {
 
-  // private final SwerveSubsystem m_swerveSubsystem = new SwerveSubsystem();
+        // private final SwerveSubsystem m_swerveSubsystem = new SwerveSubsystem();
 
-  final FlightStick m_leftFlightStick = new FlightStick(
-    OperatorConstants.kFlightPortLeft
-  );
+        final FlightStick m_leftFlightStick = new FlightStick(
+                        OperatorConstants.kFlightPortLeft);
 
-  final FlightStick m_rightFlightStick = new FlightStick(
-    OperatorConstants.kFlightPortRight
-  );
+        final FlightStick m_rightFlightStick = new FlightStick(
+                        OperatorConstants.kFlightPortRight);
 
-  final UpdatedSwerve m_swerveSubsystem = new UpdatedSwerve();
+        final UpdatedSwerve m_swerveSubsystem = new UpdatedSwerve();
 
-  public RobotContainer() {
-    m_swerveSubsystem.setDefaultCommand(
-      new RunCommand(
-        () ->
-          m_swerveSubsystem.drive(
-            new Vec2(
-              m_rightFlightStick.getRawAxis(
-                FlightStick.AxisEnum.JOYSTICKX.value
-              ),
-              m_rightFlightStick.getRawAxis(
-                FlightStick.AxisEnum.JOYSTICKY.value
-              ) *
-              -1
-            ),
-            m_rightFlightStick.getRawAxis(
-              FlightStick.AxisEnum.JOYSTICKROTATION.value
-            ),
-            1
-          ),
-        m_swerveSubsystem
-      )
-    );
-  }
+        public RobotContainer() {
+        }
+
+        public void teleopInit() {
+                m_swerveSubsystem.setDefaultCommand(
+                                new RunCommand(
+                                                () -> {
+                                                        m_swerveSubsystem.drive(
+                                                                        new Vec2(
+                                                                                        m_rightFlightStick.getRawAxis(
+                                                                                                        FlightStick.AxisEnum.JOYSTICKY.value)
+                                                                                                        *
+                                                                                                        -1,
+                                                                                        m_rightFlightStick.getRawAxis(
+                                                                                                        FlightStick.AxisEnum.JOYSTICKX.value)),
+
+                                                                        m_rightFlightStick.getRawAxis(
+                                                                                        FlightStick.AxisEnum.JOYSTICKROTATION.value),
+                                                                        0.2);
+                                                },
+                                                m_swerveSubsystem));
+
+                m_leftFlightStick.getRawButton(FlightStick.ButtonEnum.A.value);
+                new JoystickButton(
+                                m_leftFlightStick,
+                                FlightStick.ButtonEnum.A.value)
+                                .onTrue(m_swerveSubsystem.runOnce(() -> {
+                                        System.out.println("!!!!!");
+                                        m_swerveSubsystem.resetGyro();
+                                }));
+        }
 }

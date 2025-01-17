@@ -7,8 +7,9 @@ package frc.robot.util;
 public class CustomMath {
 
   /**
-   * @param x the X position on the graph
-   * @param yCoef the the height of the graph on the yAxis. This will increase / decrease the return val
+   * @param x     the X position on the graph
+   * @param yCoef the the height of the graph on the yAxis. This will increase /
+   *              decrease the return val
    * @return The Y of the X on the graph
    */
   public static double getPosOnGraph(double x, double yCoef) {
@@ -47,17 +48,18 @@ public class CustomMath {
   }
 
   /**
-   * Deadbands joystick input, then scales it from the deadband to 1. Ask Jared for clarification.
-   * @param input the joystick input, [0, 1]
+   * Deadbands joystick input, then scales it from the deadband to 1. Ask Jared
+   * for clarification.
+   * 
+   * @param input    the joystick input, [0, 1]
    * @param deadband ignores the input if it is less than this value, [0, 1]
    * @param minValue adds this value if the input overcomes the deadband, [0, 1]
    * @return the return value, [0, 1]
    */
   public static double deadband(
-    double input,
-    double deadband,
-    double minValue
-  ) {
+      double input,
+      double deadband,
+      double minValue) {
     double output;
     double m = (1.0 - minValue) / (1.0 - deadband);
 
@@ -81,5 +83,14 @@ public class CustomMath {
     }
     return in;
     // return ((in + 0.5) % 1) - 0.5;
+  }
+
+  public static double wrapTo180(double angle) {
+    double newAngle = (angle + 180) % 360;
+    while (newAngle < 0) {
+      newAngle += 360;
+    }
+
+    return newAngle - 180;
   }
 }

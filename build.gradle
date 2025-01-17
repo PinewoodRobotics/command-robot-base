@@ -102,7 +102,7 @@ tasks.withType(JavaCompile) {
 }
 
 def buildDynamically(configFilePath) {
-        exec {
+    exec {
         commandLine "python3", "scripts/clone_and_build_repos.py", "--config-file-path", configFilePath
         standardOutput = new ByteArrayOutputStream()
         errorOutput = new ByteArrayOutputStream()
