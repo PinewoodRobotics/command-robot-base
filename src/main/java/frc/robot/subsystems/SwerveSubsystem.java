@@ -15,63 +15,63 @@ import frc.robot.util.CustomMath;
 public class SwerveSubsystem extends SubsystemBase {
 
   private final SwerveModule m_frontLeftSwerveModule = new SwerveModule(
-    SwerveConstants.kFrontLeftDriveMotorPort,
-    SwerveConstants.kFrontLeftDriveMotorReversed,
-    SwerveConstants.kFrontLeftTurningMotorPort,
-    SwerveConstants.kFrontLeftTurningMotorReversed,
-    SwerveConstants.kFrontLeftCANcoderPort,
-    SwerveConstants.kFrontLeftCANcoderDirection,
-    SwerveConstants.kFrontLeftCANcoderMagnetOffset,
-    "FL"
-  );
+      SwerveConstants.kFrontLeftDriveMotorPort,
+      SwerveConstants.kFrontLeftDriveMotorReversed,
+      SwerveConstants.kFrontLeftTurningMotorPort,
+      SwerveConstants.kFrontLeftTurningMotorReversed,
+      SwerveConstants.kFrontLeftCANcoderPort,
+      SwerveConstants.kFrontLeftCANcoderDirection,
+      SwerveConstants.kFrontLeftCANcoderMagnetOffset,
+      "FL");
   private final SwerveModule m_frontRightSwerveModule = new SwerveModule(
-    SwerveConstants.kFrontRightDriveMotorPort,
-    SwerveConstants.kFrontRightDriveMotorReversed,
-    SwerveConstants.kFrontRightTurningMotorPort,
-    SwerveConstants.kFrontRightTurningMotorReversed,
-    SwerveConstants.kFrontRightCANcoderPort,
-    SwerveConstants.kFrontRightCANcoderDirection,
-    SwerveConstants.kFrontRightCANcoderMagnetOffset,
-    "FR"
-  );
+      SwerveConstants.kFrontRightDriveMotorPort,
+      SwerveConstants.kFrontRightDriveMotorReversed,
+      SwerveConstants.kFrontRightTurningMotorPort,
+      SwerveConstants.kFrontRightTurningMotorReversed,
+      SwerveConstants.kFrontRightCANcoderPort,
+      SwerveConstants.kFrontRightCANcoderDirection,
+      SwerveConstants.kFrontRightCANcoderMagnetOffset,
+      "FR");
   private final SwerveModule m_rearLeftSwerveModule = new SwerveModule(
-    SwerveConstants.kRearLeftDriveMotorPort,
-    SwerveConstants.kRearLeftDriveMotorReversed,
-    SwerveConstants.kRearLeftTurningMotorPort,
-    SwerveConstants.kRearLeftTurningMotorReversed,
-    SwerveConstants.kRearLeftCANcoderPort,
-    SwerveConstants.kRearLeftCANcoderDirection,
-    SwerveConstants.kRearLeftCANcoderMagnetOffset,
-    "RL"
-  );
+      SwerveConstants.kRearLeftDriveMotorPort,
+      SwerveConstants.kRearLeftDriveMotorReversed,
+      SwerveConstants.kRearLeftTurningMotorPort,
+      SwerveConstants.kRearLeftTurningMotorReversed,
+      SwerveConstants.kRearLeftCANcoderPort,
+      SwerveConstants.kRearLeftCANcoderDirection,
+      SwerveConstants.kRearLeftCANcoderMagnetOffset,
+      "RL");
   private final SwerveModule m_rearRightSwerveModule = new SwerveModule(
-    SwerveConstants.kRearRightDriveMotorPort,
-    SwerveConstants.kRearRightDriveMotorReversed,
-    SwerveConstants.kRearRightTurningMotorPort,
-    SwerveConstants.kRearRightTurningMotorReversed,
-    SwerveConstants.kRearRightCANcoderPort,
-    SwerveConstants.kRearRightCANcoderDirection,
-    SwerveConstants.kRearRightCANcoderMagnetOffset,
-    "RR"
-  );
+      SwerveConstants.kRearRightDriveMotorPort,
+      SwerveConstants.kRearRightDriveMotorReversed,
+      SwerveConstants.kRearRightTurningMotorPort,
+      SwerveConstants.kRearRightTurningMotorReversed,
+      SwerveConstants.kRearRightCANcoderPort,
+      SwerveConstants.kRearRightCANcoderDirection,
+      SwerveConstants.kRearRightCANcoderMagnetOffset,
+      "RR");
 
-  //the gyroscope
+  // the gyroscope
   AHRS m_gyro = new AHRS(I2C.Port.kMXP);
 
   double desiredDirection;
   PIDController m_directionPIDController = new PIDController(
-    SwerveConstants.kDirectionP,
-    SwerveConstants.kDirectionI,
-    SwerveConstants.kDirectionD
-  );
+      SwerveConstants.kDirectionP,
+      SwerveConstants.kDirectionI,
+      SwerveConstants.kDirectionD);
   double currentSpeedMultiplier = SwerveConstants.kDefaultSpeedMultiplier;
   boolean pidDirection = false;
   int countUntilPid = 0;
 
-  //the Shuffleboard tab and entries
+  // the Shuffleboard tab and entries
   private String sb_name = "SwerveSubsystem";
   private ShuffleboardTab sb_tab;
-  public GenericEntry sb_frontLeftSpeed, sb_frontRightSpeed, sb_rearLeftSpeed, sb_rearRightSpeed, sb_frontLeftAngle, sb_frontRightAngle, sb_rearLeftAngle, sb_rearRightAngle, sb_NAVXPitch, sb_NAVXYaw, sb_NAVXRoll; //yaw appears to be the axis for horizontal rotation, (-180, 180)
+  public GenericEntry sb_frontLeftSpeed, sb_frontRightSpeed, sb_rearLeftSpeed, sb_rearRightSpeed, sb_frontLeftAngle,
+      sb_frontRightAngle, sb_rearLeftAngle, sb_rearRightAngle, sb_NAVXPitch, sb_NAVXYaw, sb_NAVXRoll; // yaw appears to
+                                                                                                      // be the axis for
+                                                                                                      // horizontal
+                                                                                                      // rotation,
+                                                                                                      // (-180, 180)
 
   /**
    * Constructor method for SwerveSubsystem
@@ -83,36 +83,31 @@ public class SwerveSubsystem extends SubsystemBase {
   }
 
   /**
-   * Deadbands each of the values for joystick input before calling the drive method.
+   * Deadbands each of the values for joystick input before calling the drive
+   * method.
    *
    * @param x The left to right translation of the robot. Domain: [-1, 1]
    * @param y The backward to forward translation of the robot. Domain: [-1, 1]
    * @param r The rotational movement of the robot. Domain: [-1, 1]
    */
   public void joystickDrive(double x, double y, double r) {
-    x =
-      CustomMath.deadband(
+    x = CustomMath.deadband(
         x,
         SwerveConstants.kXSpeedDeadband,
-        SwerveConstants.kXSpeedMinValue
-      );
-    y =
-      CustomMath.deadband(
+        SwerveConstants.kXSpeedMinValue);
+    y = CustomMath.deadband(
         y,
         SwerveConstants.kYSpeedDeadband,
-        SwerveConstants.kYSpeedMinValue
-      );
-    r =
-      CustomMath.deadband(
+        SwerveConstants.kYSpeedMinValue);
+    r = CustomMath.deadband(
         r,
         SwerveConstants.kRotDeadband,
-        SwerveConstants.kRotMinValue
-      );
+        SwerveConstants.kRotMinValue);
 
-    //adjusting for field relativity if necessary
+    // adjusting for field relativity if necessary
     if (SwerveConstants.kFieldRelative) {
-      double gyroAngle = getGyroAngle(); //this gets the angle and puts it from -1/2 to 1/2
-      double nonFieldRelativeAngle = Math.atan2(x, y) / (2 * Math.PI); //again, the return value is from -1/2 to 1/2
+      double gyroAngle = getGyroAngle(); // this gets the angle and puts it from -1/2 to 1/2
+      double nonFieldRelativeAngle = Math.atan2(x, y) / (2 * Math.PI); // again, the return value is from -1/2 to 1/2
       double fieldRelativeAngle = nonFieldRelativeAngle - gyroAngle;
 
       double magnitude = Math.sqrt((x * x) + (y * y));
@@ -132,10 +127,8 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     if (SwerveConstants.kPIDDirection && pidDirection) {
-      desiredDirection =
-        CustomMath.putWithinHalfToHalf(
-          desiredDirection + (r * SwerveConstants.kDirectionMultiplier)
-        );
+      desiredDirection = CustomMath.putWithinHalfToHalf(
+          desiredDirection + (r * SwerveConstants.kDirectionMultiplier));
       r = m_directionPIDController.calculate(getGyroAngle(), desiredDirection);
     }
 
@@ -143,7 +136,8 @@ public class SwerveSubsystem extends SubsystemBase {
   }
 
   /**
-   * Calculates the angles and speeds for the swerve modules, based on x, y, and z. Then it sends the commands to the modules.
+   * Calculates the angles and speeds for the swerve modules, based on x, y, and
+   * z. Then it sends the commands to the modules.
    *
    * @param x The left to right translation of the robot. Domain: [-1, 1]
    * @param y The backward to forward translation of the robot. Domain: [-1, 1]
@@ -154,85 +148,85 @@ public class SwerveSubsystem extends SubsystemBase {
   }
 
   /**
-   * Calculates the angles and speeds for the swerve modules, based on x, y, and z. Then it sends the commands to the modules.
+   * Calculates the angles and speeds for the swerve modules, based on x, y, and
+   * z. Then it sends the commands to the modules.
    * Also has customizable speed multiplier.
-   * @param x The left to right translation of the robot. Domain: [-1, 1]
-   * @param y The backward to forward translation of the robot. Domain: [-1, 1]
-   * @param r The rotational movement of the robot. Domain: [-1, 1]
+   * 
+   * @param x                   The left to right translation of the robot.
+   *                            Domain: [-1, 1]
+   * @param y                   The backward to forward translation of the robot.
+   *                            Domain: [-1, 1]
+   * @param r                   The rotational movement of the robot. Domain: [-1,
+   *                            1]
    * @param tempSpeedMultiplier The final speed to multiply all of the outputs by
    */
   public void drive(double x, double y, double r, double tempSpeedMultiplier) {
     r *= SwerveConstants.kRotationSpeedMultiplier;
 
-    //dimensions required for doing math
+    // dimensions required for doing math
     final double L = SwerveConstants.kDriveBaseLength / 2;
     final double W = SwerveConstants.kDriveBaseWidth / 2;
     final double R = Math.sqrt((L * L) + (W * W));
 
-    //doing some math
+    // doing some math
     double a = x - r * (L / R);
     double b = x + r * (L / R);
     double c = y - r * (W / R);
     double d = y + r * (W / R);
 
-    //calculates the wheel speeds
+    // calculates the wheel speeds
     double frontLeftSpeed = Math.sqrt((b * b) + (d * d));
     double frontRightSpeed = Math.sqrt((b * b) + (c * c));
     double rearLeftSpeed = Math.sqrt((a * a) + (d * d));
     double rearRightSpeed = Math.sqrt((a * a) + (c * c));
 
-    //Because wheel outputs should be from -1 to 1, desaturates all of the wheels speeds if any
-    //of them exceed +-1, while maintaining the ratio between the wheels.
+    // Because wheel outputs should be from -1 to 1, desaturates all of the wheels
+    // speeds if any
+    // of them exceed +-1, while maintaining the ratio between the wheels.
     double denominator = CustomMath.max(
-      Math.abs(frontLeftSpeed),
-      Math.abs(frontRightSpeed),
-      Math.abs(rearLeftSpeed),
-      Math.abs(rearRightSpeed),
-      1.0
-    );
+        Math.abs(frontLeftSpeed),
+        Math.abs(frontRightSpeed),
+        Math.abs(rearLeftSpeed),
+        Math.abs(rearRightSpeed),
+        1.0);
     frontLeftSpeed = frontLeftSpeed / denominator;
     frontRightSpeed = frontRightSpeed / denominator;
     rearLeftSpeed = rearLeftSpeed / denominator;
     rearRightSpeed = rearRightSpeed / denominator;
 
-    //calculates the wheel angles, -1/2 to 1/2, with 0 representing forward
+    // calculates the wheel angles, -1/2 to 1/2, with 0 representing forward
     double frontLeftAngle = Math.atan2(b, d) / Math.PI / 2;
     double frontRightAngle = Math.atan2(b, c) / Math.PI / 2;
     double rearLeftAngle = Math.atan2(a, d) / Math.PI / 2;
     double rearRightAngle = Math.atan2(a, c) / Math.PI / 2;
 
-    //sending the wheel and angle speeds to the motor controllers
+    // sending the wheel and angle speeds to the motor controllers
     m_frontLeftSwerveModule.drive(
-      frontLeftSpeed,
-      frontLeftAngle,
-      tempSpeedMultiplier
-    );
+        frontLeftSpeed,
+        frontLeftAngle,
+        tempSpeedMultiplier);
     m_frontRightSwerveModule.drive(
-      frontRightSpeed,
-      frontRightAngle,
-      tempSpeedMultiplier
-    );
+        frontRightSpeed,
+        frontRightAngle,
+        tempSpeedMultiplier);
     m_rearLeftSwerveModule.drive(
-      rearLeftSpeed,
-      rearLeftAngle,
-      tempSpeedMultiplier
-    );
+        rearLeftSpeed,
+        rearLeftAngle,
+        tempSpeedMultiplier);
     m_rearRightSwerveModule.drive(
-      rearRightSpeed,
-      rearRightAngle,
-      tempSpeedMultiplier
-    );
+        rearRightSpeed,
+        rearRightAngle,
+        tempSpeedMultiplier);
 
     updateShuffleboardTab(
-      frontLeftSpeed,
-      frontRightSpeed,
-      rearLeftSpeed,
-      rearRightSpeed,
-      frontLeftAngle,
-      frontRightAngle,
-      rearLeftAngle,
-      rearRightAngle
-    );
+        frontLeftSpeed,
+        frontRightSpeed,
+        rearLeftSpeed,
+        rearRightSpeed,
+        frontLeftAngle,
+        frontRightAngle,
+        rearLeftAngle,
+        rearRightAngle);
   }
 
   public void setGyroAngle(double position) {
@@ -285,15 +279,14 @@ public class SwerveSubsystem extends SubsystemBase {
   }
 
   private void updateShuffleboardTab(
-    double frontLeftSpeed,
-    double frontRightSpeed,
-    double rearLeftSpeed,
-    double rearRightSpeed,
-    double frontLeftAngle,
-    double frontRightAngle,
-    double rearLeftAngle,
-    double rearRightAngle
-  ) {
+      double frontLeftSpeed,
+      double frontRightSpeed,
+      double rearLeftSpeed,
+      double rearRightSpeed,
+      double frontLeftAngle,
+      double frontRightAngle,
+      double rearLeftAngle,
+      double rearRightAngle) {
     sb_frontLeftSpeed.setDouble(frontLeftSpeed);
     sb_frontRightSpeed.setDouble(frontRightSpeed);
     sb_rearLeftSpeed.setDouble(rearLeftSpeed);
@@ -311,10 +304,10 @@ public class SwerveSubsystem extends SubsystemBase {
 
   public SwerveModulePosition[] getSwerveModulePositions() {
     return new SwerveModulePosition[] {
-      m_frontLeftSwerveModule.getPosition(),
-      m_frontRightSwerveModule.getPosition(),
-      m_rearLeftSwerveModule.getPosition(),
-      m_rearRightSwerveModule.getPosition(),
+        m_frontLeftSwerveModule.getPosition(),
+        m_frontRightSwerveModule.getPosition(),
+        m_rearLeftSwerveModule.getPosition(),
+        m_rearRightSwerveModule.getPosition(),
     };
   }
 }

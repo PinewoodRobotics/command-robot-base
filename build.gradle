@@ -116,3 +116,13 @@ def buildDynamically(configFilePath) {
         }
     }
 }
+
+tasks.register("buildDynamically") {
+    group = "custom"
+    description = "Build dependencies dynamically using the configuration file"
+
+    doLast {
+        def configFilePath = "./config.ini"
+        buildDynamically(configFilePath)
+    }
+}

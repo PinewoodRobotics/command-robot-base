@@ -80,14 +80,9 @@ public class RobotWheelMover extends WheelMover {
         SwerveConstants.kTurnConversionFactor);
   }
 
-  @Override
-  public void drive(Vec2 vector, double finalSpeedMultiplier) {
-    m_driveMotor.set(vector.getModulo() * finalSpeedMultiplier);
-    m_turnPIDController.setReference(
-        vector.getAngle() / (2 * Math.PI), // wrap this angle from -pi <-> pi to -1 <-> 1
-        CANSparkMax.ControlType.kPosition);
-  }
-
+  /**
+   * @apiNote we need to wrap angle (which is passed as -pi to pi) to -0.5 to 0.5
+   */
   @Override
   public void drive(double angle, double speed) {
     m_driveMotor.set(speed);
@@ -98,6 +93,10 @@ public class RobotWheelMover extends WheelMover {
 
   @Override
   public double getCurrentAngle() {
-    return 0.0;
+    return fromRotationsToRadians(this.m_turnRelativeEncoder.getPosition());
+  }
+
+  private double fromRotationsToRadians(double rotations) {
+    return rotations * 2 * Math.PI;
   }
 }

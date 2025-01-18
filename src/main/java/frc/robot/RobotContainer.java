@@ -13,6 +13,7 @@ import frc.robot.Constants.SwerveConstants;
 import frc.robot.hardware.RobotWheelMover;
 import frc.robot.subsystems.UpdatedSwerve;
 import frc.robot.util.Communicator;
+import frc.robot.util.CustomMath;
 import frc.robot.util.controller.FlightStick;
 import org.pwrup.SwerveDrive;
 import org.pwrup.util.Config;
@@ -21,45 +22,51 @@ import org.pwrup.util.Wheel;
 
 public class RobotContainer {
 
-        // private final SwerveSubsystem m_swerveSubsystem = new SwerveSubsystem();
+ // private final SwerveSubsystem m_swerveSubsystem = new SwerveSubsystem();
 
-        final FlightStick m_leftFlightStick = new FlightStick(
-                        OperatorConstants.kFlightPortLeft);
+ final FlightStick m_leftFlightStick = new FlightStick(
+   OperatorConstants.kFlightPortLeft);
 
-        final FlightStick m_rightFlightStick = new FlightStick(
-                        OperatorConstants.kFlightPortRight);
+ final FlightStick m_rightFlightStick = new FlightStick(
+   OperatorConstants.kFlightPortRight);
 
-        final UpdatedSwerve m_swerveSubsystem = new UpdatedSwerve();
+ final UpdatedSwerve m_swerveSubsystem = new UpdatedSwerve();
 
-        public RobotContainer() {
-        }
+ public RobotContainer() {
+ }
 
-        public void teleopInit() {
-                m_swerveSubsystem.setDefaultCommand(
-                                new RunCommand(
-                                                () -> {
-                                                        m_swerveSubsystem.drive(
-                                                                        new Vec2(
-                                                                                        m_rightFlightStick.getRawAxis(
-                                                                                                        FlightStick.AxisEnum.JOYSTICKY.value)
-                                                                                                        *
-                                                                                                        -1,
-                                                                                        m_rightFlightStick.getRawAxis(
-                                                                                                        FlightStick.AxisEnum.JOYSTICKX.value)),
+ public void teleopInit() {
+  m_swerveSubsystem.setDefaultCommand(
+    new RunCommand(
+      () -> {
+       m_swerveSubsystem.drive(
+         new Vec2(
+           CustomMath.deadband(
+             m_rightFlightStick
+               .getRawAxis(
+                 FlightStick.AxisEnum.JOYSTICKY.value)
+               *
+               -1,
+             SwerveConstants.kXSpeedDeadband,
+             SwerveConstants.kXSpeedMinValue),
+           CustomMath.deadband(
+             m_rightFlightStick.getRawAxis(
+               FlightStick.AxisEnum.JOYSTICKX.value),
+             SwerveConstants.kYSpeedDeadband,
+             SwerveConstants.kYSpeedMinValue)),
+         CustomMath.deadband(m_rightFlightStick.getRawAxis(
+           FlightStick.AxisEnum.JOYSTICKROTATION.value),
+           SwerveConstants.kRotDeadband,
+           SwerveConstants.kRotMinValue),
+         0.2);
+      },
+      m_swerveSubsystem));
 
-                                                                        m_rightFlightStick.getRawAxis(
-                                                                                        FlightStick.AxisEnum.JOYSTICKROTATION.value),
-                                                                        0.2);
-                                                },
-                                                m_swerveSubsystem));
-
-                m_leftFlightStick.getRawButton(FlightStick.ButtonEnum.A.value);
-                new JoystickButton(
-                                m_leftFlightStick,
-                                FlightStick.ButtonEnum.A.value)
-                                .onTrue(m_swerveSubsystem.runOnce(() -> {
-                                        System.out.println("!!!!!");
-                                        m_swerveSubsystem.resetGyro();
-                                }));
-        }
+  new JoystickButton(
+    m_leftFlightStick,
+    FlightStick.ButtonEnum.A.value)
+    .onTrue(m_swerveSubsystem.runOnce(() -> {
+     m_swerveSubsystem.resetGyro();
+    }));
+ }
 }
