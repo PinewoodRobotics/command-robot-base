@@ -38,7 +38,8 @@ def main():
 
     check_folders()
 
-    os.chdir("lib/vendor")
+    vendor_path = os.path.abspath("lib/vendor")
+    os.chdir(vendor_path)
 
     for section in config.sections():
         if config.getboolean(section, "build_dynamically"):
@@ -49,6 +50,8 @@ def main():
 
         github_url = config.get(section, "github")
         use_branch = config.has_option(section, "branch")
+
+        os.chdir(vendor_path)
 
         if not os.path.exists(section):
             print(f"Cloning {section}")
@@ -63,7 +66,8 @@ def main():
         else:
             logging.info(f"{section} already exists. Building from existing repo.")
 
-        os.chdir(section)
+        repo_path = os.path.join(vendor_path, section)
+        os.chdir(repo_path)
 
         out = subprocess.run(["./gradlew", "build"], capture_output=True, text=True)
         print(out.stdout)
@@ -75,9 +79,8 @@ def main():
 
         build_libs_path = os.path.join("build", "libs")
         for jar_file in glob.glob(os.path.join(build_libs_path, "*.jar")):
-            shutil.copy(jar_file, "../../build")
-
-        os.chdir("../..")
+            dest_path = os.path.abspath(os.path.join(vendor_path, "..", "build"))
+            shutil.copy(jar_file, dest_path)
 
 
 if __name__ == "__main__":
