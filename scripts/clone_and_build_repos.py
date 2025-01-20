@@ -53,6 +53,9 @@ def main():
 
         os.chdir(vendor_path)
 
+        if config.getboolean(section, "force_clone") and os.path.exists(section):
+            delete_folder(section)
+
         if not os.path.exists(section):
             print(f"Cloning {section}")
             subprocess.run(
