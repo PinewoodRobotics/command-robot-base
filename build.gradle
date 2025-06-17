@@ -1,6 +1,7 @@
 plugins {
     id "java"
     id "edu.wpi.first.GradleRIO" version "2025.2.1"
+    id "com.google.protobuf" version "0.9.3"
     id "groovy" // Required for ConfigSlurper
 }
 
@@ -68,7 +69,6 @@ dependencies {
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    implementation 'com.github.PinewoodRobotics:PWRUPCore:-SNAPSHOT'
 }
 
 buildDynamically("./config.ini")
@@ -112,6 +112,29 @@ def buildDynamically(configFilePath) {
     project.afterEvaluate {
         dependencies {
             implementation files(jarFiles)
+        }
+    }
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.22.2"
+    }
+    generateProtoTasks {
+        all().each { task ->
+            task.builtins {
+                java {
+                    option 'lite'
+                }
+            }
+        }
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs += "$buildDir/generated/source/proto/main/java"
         }
     }
 }
