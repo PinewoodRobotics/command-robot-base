@@ -39,9 +39,10 @@ def main():
     check_folders()
 
     vendor_path = os.path.abspath("lib/vendor")
-    os.chdir(vendor_path)
+    build_jar_path = os.path.abspath("lib/build")
 
     for section in config.sections():
+        os.chdir(vendor_path)
         if config.getboolean(section, "build_dynamically"):
             logging.info(f"Building {section}")
         else:
@@ -50,8 +51,6 @@ def main():
 
         github_url = config.get(section, "github")
         use_branch = config.has_option(section, "branch")
-
-        os.chdir(vendor_path)
 
         if config.getboolean(section, "force_clone") and os.path.exists(section):
             delete_folder(section)
@@ -82,7 +81,9 @@ def main():
 
         build_libs_path = os.path.join("build", "libs")
         for jar_file in glob.glob(os.path.join(build_libs_path, "*.jar")):
-            dest_path = os.path.abspath(os.path.join(vendor_path, "..", "build"))
+            dest_path = os.path.abspath(
+                os.path.join(build_jar_path, os.path.basename(jar_file))
+            )
             shutil.copy(jar_file, dest_path)
 
 
