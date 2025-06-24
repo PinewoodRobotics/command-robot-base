@@ -1,63 +1,119 @@
-# Build from Source vs. from Online Library
+# Dynamic Source Building System
 
 ## Purpose
 
-When you're in a situation where you don't have time to re-publish a library, you can enable a flag that builds the robot code from the latest commit or local version of the library rather than the online repository. This allows you to modify the library's code **locally** without needing to push it to GitHub. This process is streamlined by using [JitPack](https://jitpack.io) for building the library. **Note**: Do not use this process without JitPack.
+This system allows you to build robot code using dependencies built from source rather than pre-published libraries. When you need to use the latest changes from a library repository (including local modifications), you can configure the build system to automatically clone, build, and include the library's JAR files directly into your project. This is particularly useful during development when you need to test changes before they are officially released.
 
 ## Methodology
 
-1. The `.env` file includes a `PROD_FLAG` that can be set to either `"true"` or `"false"`. The default value is `"false"`.
-2. The `gradlew.bat` script will:
-    - Build the library from the latest published version if the `PROD_FLAG` is `"false"`.
-    - Build the library from the source code (latest commit or local changes) if the `PROD_FLAG` is `"true"`.
+1. The `config.ini` file defines which libraries should be built dynamically from source.
+2. During the Gradle build process, a Python script (`scripts/clone_and_build_repos.py`) is executed that:
+   - Reads the configuration to determine which repositories to build
+   - Clones the specified GitHub repositories into `lib/vendor/`
+   - Builds each repository using their respective `./gradlew build` command
+   - Copies the resulting JAR files to `lib/build/`
+3. The `build.gradle` file then includes all JAR files from `lib/build/` as project dependencies.
 
 ```mermaid
 graph LR;
-A(Build) --> B(Download Dependencies) --> C{Is PROD_FLAG true?}
-C --> |true| D(Create folders lib, lib/vendor, lib/build)
-D --> E(Download latest commit from GitHub)
-E --> G(Build from source using `./gradlew build`)
-G --> H(Copy JAR files to lib/build and implement them as dependencies)
-C --> |false| F(Implement from online repository)
-F --> I(Compile robot code)
+A(Gradle Build) --> B(Execute Python Script) --> C(Read config.ini)
+C --> D{build_dynamically = true?}
+D --> |true| E(Clone/Update Repository)
+E --> F(Build with ./gradlew build)
+F --> G(Copy JARs to lib/build)
+D --> |false| H(Skip Repository)
+G --> I(Include JAR files as dependencies)
 H --> I
+I --> J(Continue Robot Code Build)
 ```
 
-### `PROD_FLAG` Behavior:
-- **PROD_FLAG = "false"**: The script pulls the dependency from the **online repository** using JitPack or specified default implementation string.
-- **PROD_FLAG = "true"**: The script clones the repository from GitHub and builds the dependency from the **latest commit or local changes**.
+### Configuration Behavior:
+- **build_dynamically = true**: The repository is cloned (if not present), built from source, and JAR files are included as dependencies.
+- **build_dynamically = false**: The repository is skipped entirely during the build process.
 
-## Usage
+## Configuration
 
-In your `build.gradle` file, you can manage dependencies based on the `PROD_FLAG` environment variable:
+Libraries are configured in the `config.ini` file using the following format:
 
-### Example Code:
-```java
-dependencies {
+```ini
+[LibraryName]
+build_dynamically = true
+github = https://github.com/user/repository.git
+branch = main
+force_clone = false
+```
 
-    // Add other dependencies here
-    
-    // Use addGithubRepo for dynamic GitHub dependencies
-    addGithubRepoJitPack("__USER__", "__REPO__", "__VERSION__")
-    // Example: addGithubRepoJitPack("lolhol", "KeybindConfigurator", "0.2")
+### Configuration Options:
+- **build_dynamically**: Boolean flag to enable/disable building this library from source
+- **github**: The GitHub repository URL to clone
+- **branch**: (Optional) Specific branch to checkout. Defaults to the repository's default branch
+- **force_clone**: Boolean flag to force re-cloning the repository even if it already exists locally
 
-    // For testing
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
+### Example Configuration:
+```ini
+[PWRUPCore]
+build_dynamically = true
+github = https://github.com/PinewoodRobotics/PWRUPCore.git
+branch = main
+force_clone = false
+
+[AnotherLibrary]
+build_dynamically = false
+github = https://github.com/example/library.git
 ```
 
 ## How It Works:
 
-- If you are in **non-production mode** (`PROD_FLAG = "false"`):
-    - The script pulls the dependency from JitPack using the format: `com.github.__user__:__repo__:__version__`.
+### Build Process:
 
-- If you are in **production mode** (`PROD_FLAG = "true"`):
-    - The script clones the GitHub repository, builds the project, and automatically adds the built `.jar` files as dependencies in the project.
+1. **Configuration Reading**: The Python script reads `config.ini` and processes each section where `build_dynamically = true`.
 
-### Steps in Production Mode:
+2. **Repository Management**: For each enabled library:
+   - If `force_clone = true` and the repository exists locally, it is deleted and re-cloned
+   - If the repository doesn't exist, it is cloned from the specified GitHub URL
+   - If a specific branch is configured, that branch is checked out
 
-1. Clone the GitHub repository locally.
-2. Build the project using Gradle's `./gradlew build` command.
-3. Copy the resulting `.jar` files to the `lib/build` directory.
-4. Add the `.jar` files as dependencies to the project.
+3. **Source Building**: Each repository is built using its own Gradle build system (`./gradlew build`).
+
+4. **JAR Collection**: All resulting JAR files from `build/libs/` are copied to the project's `lib/build/` directory.
+
+5. **Dependency Integration**: The main `build.gradle` automatically includes all JAR files from `lib/build/` as project dependencies.
+
+### Directory Structure:
+```
+project-root/
+├── lib/
+│   ├── build/          # Generated JAR files from built dependencies
+│   └── vendor/         # Cloned source repositories
+│       ├── PWRUPCore/
+│       └── OtherLibrary/
+├── config.ini          # Build configuration
+└── scripts/
+    └── clone_and_build_repos.py
+```
+
+## Usage
+
+To add a new library to be built from source:
+
+1. Add a new section to `config.ini`:
+```ini
+[YourLibraryName]
+build_dynamically = true
+github = https://github.com/username/repository.git
+branch = main
+force_clone = false
+```
+
+2. Run the Gradle build as normal:
+```bash
+./gradlew build
+```
+
+The system will automatically handle cloning, building, and including the library during the build process.
+
+## Advanced Options
+
+- **Local Development**: You can manually modify the cloned repositories in `lib/vendor/` and they will be built with your local changes.
+- **Force Rebuild**: Set `force_clone = true` to ensure a fresh clone of the repository on the next build.
+- **Selective Building**: Set `build_dynamically = false` to temporarily disable building a specific library without removing its configuration.

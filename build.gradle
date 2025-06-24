@@ -116,6 +116,57 @@ def buildDynamically(configFilePath) {
     }
 }
 
+/* TODO
+// Task to initialize Node.js environment and create package.json
+task initNode {
+    description = 'Initialize Node.js environment and create package.json'
+    group = 'setup'
+    
+    doLast {
+        def packageJsonContent = '''{
+  "name": "2025reefscape-new",
+  "version": "1.0.0",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "echo \\"Error: no test specified\\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PinewoodRobotics/2025Reefscape-NEW.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/PinewoodRobotics/2025Reefscape-NEW/issues"
+  },
+  "homepage": "https://github.com/PinewoodRobotics/2025Reefscape-NEW#readme",
+  "description": "",
+  "devDependencies": {
+    "tsx": "^4.19.3"
+  }
+}'''
+        
+        def packageJsonFile = file('package.json')
+        packageJsonFile.text = packageJsonContent
+        println "Created package.json file"
+        
+        // Install dependencies if npm is available
+        try {
+            exec {
+                commandLine 'npm', 'install'
+                ignoreExitValue = true
+            }
+            println "Installed Node.js dependencies"
+        } catch (Exception e) {
+            println "npm not found - package.json created but dependencies not installed"
+            println "Run 'npm install' manually to install dependencies"
+        }
+    }
+}*/
+
 protobuf {
     protoc {
         artifact = "com.google.protobuf:protoc:3.22.2"
