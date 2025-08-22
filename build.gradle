@@ -34,7 +34,7 @@ deploy {
                 frcJava(getArtifactTypeClass('FRCJavaArtifact')) {}
 
                 frcStaticFileDeploy(getArtifactTypeClass('FileTreeArtifact')) {
-                    files = project.fileTree('src/main/deploy')
+                    files = project.fileTree("src/main/deploy")
                     directory = '/home/lvuser/deploy'
                 }
             }
@@ -100,6 +100,27 @@ tasks.withType(JavaCompile) {
     options.compilerArgs.add '-XDstringConcat=inline'
 }
 
+def generateJsonConfig() {
+    def stdout = new ByteArrayOutputStream()
+    def stderr = new ByteArrayOutputStream()
+
+    try {
+        exec {
+            commandLine "npm", "run", "config", "--silent", "--", "--dir", "src/config"
+            standardOutput = stdout
+            errorOutput = stderr
+            ignoreExitValue = false
+        }
+
+        def deployDir = new File("src/main/deploy")
+        deployDir.mkdirs()
+        new File(deployDir, "config").text = stdout.toString().trim()
+    } catch (Exception e) {
+        println "Failed to generate config: ${e.message}"
+        println "Error Output:\n${stderr.toString().trim()}"
+    }
+}
+
 def buildDynamically(configFilePath) {
         exec {
         commandLine "python3", "scripts/clone_and_build_repos.py", "--config-file-path", configFilePath
@@ -116,56 +137,7 @@ def buildDynamically(configFilePath) {
     }
 }
 
-/* TODO
-// Task to initialize Node.js environment and create package.json
-task initNode {
-    description = 'Initialize Node.js environment and create package.json'
-    group = 'setup'
-    
-    doLast {
-        def packageJsonContent = '''{
-  "name": "2025reefscape-new",
-  "version": "1.0.0",
-  "main": "index.js",
-  "directories": {
-    "lib": "lib"
-  },
-  "scripts": {
-    "test": "echo \\"Error: no test specified\\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/PinewoodRobotics/2025Reefscape-NEW.git"
-  },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/PinewoodRobotics/2025Reefscape-NEW/issues"
-  },
-  "homepage": "https://github.com/PinewoodRobotics/2025Reefscape-NEW#readme",
-  "description": "",
-  "devDependencies": {
-    "tsx": "^4.19.3"
-  }
-}'''
-        
-        def packageJsonFile = file('package.json')
-        packageJsonFile.text = packageJsonContent
-        println "Created package.json file"
-        
-        // Install dependencies if npm is available
-        try {
-            exec {
-                commandLine 'npm', 'install'
-                ignoreExitValue = true
-            }
-            println "Installed Node.js dependencies"
-        } catch (Exception e) {
-            println "npm not found - package.json created but dependencies not installed"
-            println "Run 'npm install' manually to install dependencies"
-        }
-    }
-}*/
+generateJsonConfig()
 
 protobuf {
     protoc {
