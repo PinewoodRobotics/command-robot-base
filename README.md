@@ -1,63 +1,154 @@
 # PWRUP Command Robot Base
 
-## Introduction
+### What is this?
 
-Welcome to the **PWRUP Command Robot Base**! This repository serves as the foundation for building command-based robots that our team will create in the years ahead. By providing a structured framework, essential libraries, and key features, this template aims to streamline the development process and set our robots up for success.
+An opinionated, clone-and-code base for FRC robots built on WPILib’s Command-Based framework. It wires together:
 
-### Key Benefits:
-- **Modularity:** Easily fork this repository to kickstart a new robot project.
-- **Reusability:** Built-in features and libraries ensure consistency and speed up development.
-- **Scalability:** Designed to be expanded with additional functionality as our team's needs grow.
+- WPILib 2025 with GradleRIO
+- AdvantageKit logging (replay/sim support)
+- Dynamic source-built vendor libraries (cloned and built at compile time)
+- TypeScript-driven robot configuration compiled to Thrift and embedded at deploy
 
----
-
-## Functionality
-
-This template provides the core structure for building robots using the **Command-Based Programming** model. It includes essential features and tools to simplify the creation and deployment of robot software, ensuring that our team has a solid base to work from.
-
-### Use Case:
-When a new robot project is started, the team can **fork** this repository, allowing them to focus on adding custom code specific to their robot, while benefiting from the standardized tools and libraries already included.
+Use this repository as a starting point for new robots: fork it, configure, add subsystems/commands, and deploy.
 
 ---
 
-## Features Overview
+## Highlights
 
-This repository includes several pre-configured features and libraries to accelerate development and promote best practices. As the team’s requirements evolve, we’ll continue to integrate more functionalities.
-
-### Current Features:
-
-1. **[Source vs. Online Library Building](./docs/SourceBuildingPlugin.md)**:
-   - Enables developers to decide whether to build the robot software from the **latest source code** or from a pre-built **online library**.
-   - This flexibility is particularly useful when working under tight deadlines or experimenting with local changes without needing to push to GitHub.
-   - See the detailed documentation [here](./docs/SourceBuildingPlugin.md).
-
-### Future Expansion:
-- Additional libraries and features will be added as the team's needs grow, ensuring the template evolves with the requirements of our robot projects.
+- Dynamic vendor builds via `config.ini` and a Python helper: clone, build, and include JARs from source (`lib/vendor` → `lib/build`). See `docs/SourceBuildingPlugin.md`.
+- ThriftTsConfig workspace generates a binary `config` payload from `src/config/` TypeScript at build time and places it into `src/main/deploy/config`.
+- AdvantageKit logging preset for REAL, SIM, and REPLAY modes.
+- Protobuf-lite support for robot messaging (`src/proto` compiled to Java during build).
 
 ---
 
-## Getting Started
+## Prerequisites
 
-### 1. Forking the Repository
-To create a new robot, simply **fork this repository** and start adding your custom robot code. The template is designed to be modular, allowing you to build upon it with minimal configuration.
-
-### 2. Using the Build System
-By default, the repository is configured to use Gradle, with a built-in option for selecting **source vs. online builds**. This ensures that whether you're pulling the latest version of a library from a repository or building locally, the process is seamless.
-
-Refer to the [SourceBuildingPlugin.md](./docs/SourceBuildingPlugin.md) for more information on configuring the build system based on your current needs.
-
-### 3. Customizing Your Robot Code
-Once you've forked the repository:
-- Add your custom subsystems, commands, and robot logic.
-- Leverage the pre-configured structure to ensure your robot code adheres to best practices and command-based programming principles.
+- Java 17 (required by WPILib 2025)
+- Node.js 18+ and npm
+- Python 3.9+
+- Thrift compiler (`thrift`) on PATH for regenerating TS types in `ThriftTsConfig` (only if you modify schemas)
 
 ---
 
-## Contribution Guidelines
+## Quick Start
 
-If you have ideas for new features or improvements to this template, please feel free to:
-1. Fork the repository.
-2. Create a branch for your feature or fix.
-3. Submit a pull request with detailed information about the changes.
+1. Clone the base
 
-We encourage all team members to contribute to this repository so that it continues to meet the evolving needs of our robot projects.
+```bash
+git clone <this-repo> my-robot
+cd my-robot
+```
+
+2. Install Node workspace deps (for config generation)
+
+```bash
+npm install
+```
+
+3. Configure dynamic vendor libraries (optional)
+
+Edit `config.ini` to choose which libraries build from source:
+
+```ini
+[PWRUPCore]
+build_dynamically = true
+github = https://github.com/PinewoodRobotics/PWRUPCore.git
+branch = main
+force_clone = false
+```
+
+On build, repos in `config.ini` with `build_dynamically = true` are cloned to `lib/vendor/`, built with their own Gradle, and JARs are copied to `lib/build/` and added to the classpath.
+
+4. Customize robot configuration
+
+Edit TypeScript files in `src/config/` (e.g., cameras, LiDAR, AprilTags, pose extrapolator, pathfinding). The build runs `npm run config -- --dir src/config` and writes the generated binary to `src/main/deploy/config`.
+
+5. Build, simulate, or deploy
+
+```bash
+# Build Java + generate config + build dynamic vendors
+./gradlew build
+
+# Run simulator GUI
+./gradlew simulateJava
+
+# Deploy to RoboRIO
+./gradlew deploy -PteamNumber=<TEAM>
+```
+
+---
+
+## Project Layout
+
+- `src/main/java/frc/robot` — `Robot`, `RobotContainer`, constants, commands, subsystems scaffold.
+- `src/config` — TypeScript config authoring; compiled to Thrift binary at build and deployed to `deploy/config`.
+- `src/proto` — Protobuf definitions compiled to Java (lite) during build.
+- `ThriftTsConfig` — Node workspace for config generation and Thrift type generation.
+- `lib/vendor` — Cloned source repositories for dynamic vendor builds.
+- `lib/build` — Built JARs collected from vendor repos (auto-added to classpath).
+
+---
+
+## Build Details
+
+- `build.gradle`
+  - Applies `edu.wpi.first.GradleRIO` 2025.2.1 and configures RoboRIO deploy artifacts
+  - Protobuf Java 3.22.2 (lite) generation from `src/proto`
+  - Lombok (compileOnly/annotationProcessor)
+  - JUnit 5 for tests
+  - AdvantageKit logging wiring in `Robot.java`
+  - Two custom steps:
+    - Dynamic vendor build: runs `scripts/clone_and_build_repos.py` using `config.ini`, then adds `lib/build/*.jar`
+    - Config generation: runs `npm run config -- --dir src/config` and writes to `src/main/deploy/config`
+
+---
+
+## ThriftTsConfig (configs)
+
+- Edit `src/config/**` TypeScript to author your robot configuration.
+- To regenerate Thrift TS types after changing schemas under `ThriftTsConfig/schema`, run:
+
+```bash
+npm run generate-thrift
+```
+
+Output types appear under `ThriftTsConfig/generated/thrift` and are imported by the config code.
+
+Advanced usage (JSON or file output) is documented in `ThriftTsConfig/README.md`.
+
+---
+
+## Modes and Logging
+
+`BotConstants` selects mode:
+
+- REAL: writes AdvantageKit logs to the roboRIO
+- SIM: NT4 publisher with GUI
+- REPLAY: reads WPILOG and writes a new `_sim` log
+
+Switch sim vs real by editing `BotConstants` when not on a roboRIO.
+
+---
+
+## Common Commands
+
+```bash
+# Build everything
+./gradlew build
+
+# Clean cached vendor outputs
+rm -rf lib/vendor lib/build
+
+# Regenerate Thrift TS types
+npm run generate-thrift
+
+# Generate config manually (stdout as base64)
+npm run config -- --dir src/config
+```
+
+---
+
+## Contributing / Using as a Base
+
+This repository is intended to be cloned per-robot and customized. If you improve the base, open a PR here with concise context. Keep components modular and favor small, focused classes and commands.
