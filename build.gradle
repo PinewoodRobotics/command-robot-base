@@ -2,7 +2,7 @@ plugins {
     id "java"
     id "edu.wpi.first.GradleRIO" version "2025.2.1"
     id "com.google.protobuf" version "0.9.3"
-    id "groovy" // Required for ConfigSlurper
+    id "groovy"
 }
 
 java {
@@ -66,12 +66,14 @@ dependencies {
     nativeRelease wpi.java.deps.wpilibJniRelease(wpi.platforms.desktop)
     nativeRelease wpi.java.vendor.jniRelease(wpi.platforms.desktop)
     simulationRelease wpi.sim.enableRelease()
+    
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+    implementation "com.google.protobuf:protobuf-java:3.22.2"
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
-
-buildDynamically("./config.ini")
 
 test {
     useJUnitPlatform()
@@ -100,6 +102,9 @@ tasks.withType(JavaCompile) {
     options.compilerArgs.add '-XDstringConcat=inline'
 }
 
+// Function to generate the config.json file. This is used to configure the robot.
+// It calls a node script that generates the config.json file from typescript. Node that the terminal will be
+// flooded with output from the node script because it is in base64 for decoding issues in multilang environments.
 def generateJsonConfig() {
     def stdout = new ByteArrayOutputStream()
     def stderr = new ByteArrayOutputStream()
@@ -121,12 +126,59 @@ def generateJsonConfig() {
     }
 }
 
+// Function to build dependencies dynamically. This calls a python script that clones and builds the dependencies.
+// It then adds the jars to the classpath.
 def buildDynamically(configFilePath) {
+    def stdout = new ByteArrayOutputStream()
+    def stderr = new ByteArrayOutputStream()
+    def buildFailed = false
+
+    try {
         exec {
-        commandLine "python3", "scripts/clone_and_build_repos.py", "--config-file-path", configFilePath
-        standardOutput = new ByteArrayOutputStream()
-        errorOutput = new ByteArrayOutputStream()
+            commandLine "python3", "scripts/clone_and_build_repos.py", "--config-file-path", configFilePath
+            standardOutput = stdout
+            errorOutput = stderr
+            ignoreExitValue = false
+        }
+    } catch (Exception e) {
+        buildFailed = true
+        // ANSI escape code for red: \u001B[31m, reset: \u001B[0m
+        println "\n\n" +
+                "\u001B[31m" +
+                "#############################################################\n" +
+                "#                                                           #\n" +
+                "#                FAILED TO BUILD DEPENDENCIES!              #\n" +
+                "#                                                           #\n" +
+                "#############################################################\n" +
+                "\u001B[0m"
+        println "\u001B[31mExecution failed: ${e.message}\u001B[0m"
     }
+
+    if (stdout.toString().contains("FAILED") || stderr.toString().toLowerCase().contains("error") || buildFailed) {
+        println "\n\n" +
+                "\u001B[31m" +
+                "#############################################################\n" +
+                "#                                                           #\n" +
+                "#                FAILED TO BUILD DEPENDENCIES!              #\n" +
+                "#                                                           #\n" +
+                "#############################################################\n" +
+                "\u001B[0m"
+        println "\u001B[31mError Output:\n${stderr.toString().trim()}\u001B[0m"
+        throw new Exception("Failed to build dependencies")
+    }
+
+    println "Standard Output:\n${stdout.toString().trim()}"
+    println "Error Output:\n${stderr.toString().trim()}"
+
+    // ANSI escape code for green: \u001B[32m, reset: \u001B[0m
+    println "\n\n" +
+        "\u001B[32m" +
+        "#############################################################\n" +
+        "#                                                           #\n" +
+        "#                BUILT DYNAMIC DEPENDENCIES!                #\n" +
+        "#                                                           #\n" +
+        "#############################################################\n" +
+        "\u001B[0m"
 
     def jarFiles = fileTree(dir: "lib/build", include: '*.jar')
 
@@ -137,6 +189,7 @@ def buildDynamically(configFilePath) {
     }
 }
 
+buildDynamically("./config.ini")
 generateJsonConfig()
 
 protobuf {
@@ -152,12 +205,17 @@ protobuf {
             }
         }
     }
+
+    generatedFilesBaseDir = "$buildDir/generated/source"
 }
 
 sourceSets {
     main {
         java {
             srcDirs += "$buildDir/generated/source/proto/main/java"
+        }
+        proto {
+            srcDirs = ['src/proto']
         }
     }
 }

@@ -24,6 +24,33 @@ def delete_folder(folder_name):
         shutil.rmtree(folder_name)
 
 
+def print_separator(name: str, color: str = "cyan", char: str = "-", width: int = 32):
+    """
+    Prints a colored separator line with the given name centered.
+    color: one of 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white'
+    char: the character to use for the separator
+    width: number of chars on each side of the name
+    """
+    colors = {
+        "red": "\033[91m",
+        "green": "\033[92m",
+        "yellow": "\033[93m",
+        "blue": "\033[94m",
+        "magenta": "\033[95m",
+        "cyan": "\033[96m",
+        "white": "\033[97m",
+        "reset": "\033[0m",
+    }
+    print()
+    color_code = colors.get(color, colors["cyan"])
+    reset_code = colors["reset"]
+    sep = f" {name} "
+    total_len = width * 2 + len(sep)
+    line = sep.center(total_len, char)
+    print(f"{color_code}{line}{reset_code}")
+    print()
+
+
 def main():
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -70,6 +97,8 @@ def main():
 
         repo_path = os.path.join(vendor_path, section)
         os.chdir(repo_path)
+
+        print_separator(section, "green")
 
         out = subprocess.run(["./gradlew", "build"], capture_output=True, text=True)
         print(out.stdout)

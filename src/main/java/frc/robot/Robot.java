@@ -1,14 +1,41 @@
 package frc.robot;
 
-import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj2.command.Command;
+import org.littletonrobotics.junction.LogFileUtil;
+import org.littletonrobotics.junction.LoggedRobot;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.NT4Publisher;
+import org.littletonrobotics.junction.wpilog.WPILOGReader;
+import org.littletonrobotics.junction.wpilog.WPILOGWriter;
+
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.constant.BotConstants;
 
-public class Robot extends TimedRobot {
-
-  private Command m_autonomousCommand;
+public class Robot extends LoggedRobot {
 
   private RobotContainer m_robotContainer;
+
+  public Robot() {
+    Logger.addDataReceiver(new NT4Publisher());
+    switch (BotConstants.currentMode) {
+      case REAL:
+        Logger.addDataReceiver(new WPILOGWriter());
+        Logger.addDataReceiver(new NT4Publisher());
+        break;
+
+      case SIM:
+        Logger.addDataReceiver(new NT4Publisher());
+        break;
+
+      case REPLAY:
+        setUseTiming(false);
+        String logPath = LogFileUtil.findReplayLog();
+        Logger.setReplaySource(new WPILOGReader(logPath));
+        Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim")));
+        break;
+    }
+
+    Logger.start();
+  }
 
   @Override
   public void robotInit() {
@@ -21,32 +48,28 @@ public class Robot extends TimedRobot {
   }
 
   @Override
-  public void disabledInit() {}
+  public void disabledInit() {
+  }
 
   @Override
-  public void disabledPeriodic() {}
+  public void disabledPeriodic() {
+  }
 
   @Override
   public void autonomousInit() {
-    m_autonomousCommand = m_robotContainer.getAutonomousCommand();
-
-    if (m_autonomousCommand != null) {
-      m_autonomousCommand.schedule();
-    }
   }
 
   @Override
-  public void autonomousPeriodic() {}
+  public void autonomousPeriodic() {
+  }
 
   @Override
   public void teleopInit() {
-    if (m_autonomousCommand != null) {
-      m_autonomousCommand.cancel();
-    }
   }
 
   @Override
-  public void teleopPeriodic() {}
+  public void teleopPeriodic() {
+  }
 
   @Override
   public void testInit() {
@@ -54,11 +77,14 @@ public class Robot extends TimedRobot {
   }
 
   @Override
-  public void testPeriodic() {}
+  public void testPeriodic() {
+  }
 
   @Override
-  public void simulationInit() {}
+  public void simulationInit() {
+  }
 
   @Override
-  public void simulationPeriodic() {}
+  public void simulationPeriodic() {
+  }
 }
