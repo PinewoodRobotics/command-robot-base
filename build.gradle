@@ -105,7 +105,7 @@ tasks.withType(JavaCompile) {
 // Function to generate the config.json file. This is used to configure the robot.
 // It calls a node script that generates the config.json file from typescript. Node that the terminal will be
 // flooded with output from the node script because it is in base64 for decoding issues in multilang environments.
-def generateJsonConfig() {
+def generateConfig() {
     def stdout = new ByteArrayOutputStream()
     def stderr = new ByteArrayOutputStream()
 
@@ -190,7 +190,20 @@ def buildDynamically(configFilePath) {
 }
 
 buildDynamically("./config.ini")
-generateJsonConfig()
+
+tasks.register("generateConfig") {
+    group = "build"
+    description = "Generate config.json from TSX output"
+    doLast {
+        generateConfig()
+    }
+}
+
+tasks.build.dependsOn(tasks.generateConfig)
+
+tasks.build.dependsOn(tasks.generateProto)
+tasks.jar.dependsOn(tasks.generateProto)
+tasks.compileJava.dependsOn(tasks.generateProto)
 
 protobuf {
     protoc {
