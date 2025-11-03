@@ -192,3 +192,10 @@ yarn-error.log*
 .DS_Store
 coverage/
 .nyc_output
+
+.venv/
+src/backend/generated/
+
+*.pyc
+*.pyo
+*.pyw

@@ -102,9 +102,6 @@ tasks.withType(JavaCompile) {
     options.compilerArgs.add '-XDstringConcat=inline'
 }
 
-// Function to generate the config.json file. This is used to configure the robot.
-// It calls a node script that generates the config.json file from typescript. Node that the terminal will be
-// flooded with output from the node script because it is in base64 for decoding issues in multilang environments.
 def generateConfig() {
     def stdout = new ByteArrayOutputStream()
     def stderr = new ByteArrayOutputStream()
@@ -189,7 +186,63 @@ def buildDynamically(configFilePath) {
     }
 }
 
+def applyBackend(expectedNumOfPis) {
+  def stdout = new ByteArrayOutputStream()
+  def stderr = new ByteArrayOutputStream()
+  def buildFailed = false
+
+  try {
+    exec {
+      commandLine "make", "deploy-backend"
+      standardOutput = stdout
+      errorOutput = stderr
+      ignoreExitValue = false
+    }
+  } catch (Exception e) {
+    buildFailed = true
+    println "Failed to apply backend: ${e.message}"
+    println "Error Output:\n${stderr.toString().trim()}"
+  }
+
+  println stdout;
+  println stderr;
+
+  if (!stderr.toString().contains("Deployed on " + expectedNumOfPis.toString() + " Pis") && !stdout.toString().contains("Deployed on " + expectedNumOfPis.toString() + " Pis")) {
+    println ""
+    println "============================================================="
+    println "Failed to apply backend because it was not deployed on the expected number of Pis. Please set the expected number of Pis in the build.gradle file and try again (check 'EXPECTED_NUM_OF_PIS' variable)."
+    println "Expected number of Pis: " + expectedNumOfPis.toString()
+    println "Deployed number of Pis: " + stdout.toString().split("Deployed on ")[1].split(" Pis")[0]
+    println "============================================================="
+    println ""
+
+    throw new Exception("Failed to apply backend because it was not deployed on the expected number of Pis (expected " + expectedNumOfPis.toString() + " Pis, deployed " + stdout.toString().split("Deployed on ")[1].split(" Pis")[0] + " Pis)")
+  }
+}
+
+def installPythonDependencies() {
+  exec {
+    commandLine "make", "prep-project"
+  }
+}
+
+tasks.register("installPythonDependencies") {
+    group = "build"
+    description = "Install Python dependencies"
+    doLast {
+        installPythonDependencies()
+    }
+}
+
 buildDynamically("./config.ini")
+
+tasks.register("applyBackend") {
+    group = "build"
+    description = "Apply backend"
+    doLast {
+        applyBackend(EXPECTED_NUM_OF_PIS)
+    }
+}
 
 tasks.register("generateConfig") {
     group = "build"
@@ -199,11 +252,15 @@ tasks.register("generateConfig") {
     }
 }
 
+tasks.build.dependsOn(tasks.installPythonDependencies)
 tasks.build.dependsOn(tasks.generateConfig)
-
 tasks.build.dependsOn(tasks.generateProto)
+
+tasks.deploy.dependsOn(tasks.applyBackend)
+
 tasks.jar.dependsOn(tasks.generateProto)
 tasks.compileJava.dependsOn(tasks.generateProto)
+
 
 protobuf {
     protoc {
