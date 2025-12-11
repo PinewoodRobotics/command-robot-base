@@ -1,54 +1,55 @@
-# PWRUP Command Robot Base
+## PWRUP Command Robot Base
 
-### What is this?
+### What this repo is
 
-An opinionated, clone-and-code base for FRC robots built on WPILib’s Command-Based framework. It wires together:
+This is a command-based FRC robot starter that glues together:
 
-- WPILib 2025 with GradleRIO
-- AdvantageKit logging (replay/sim support)
-- Dynamic source-built vendor libraries (cloned and built at compile time)
-- TypeScript-driven robot configuration compiled to Thrift and embedded at deploy
+- **WPILib 2025 + GradleRIO** for the main Java robot code
+- **AdvantageKit** for logging, replay, and sim workflows
+- **TypeScript-authored robot config** compiled to a Thrift binary and deployed with the robot
+- **Dynamically built vendor libraries** pulled from source at build time
+- **Python/Rust backend tooling** for sensor and config handling
 
-Use this repository as a starting point for new robots: fork it, configure, add subsystems/commands, and deploy.
+The intent is simple: clone this once per robot, tune the config, drop in your subsystems/commands, and ship.
 
 ---
 
-## Highlights
+## Why you might use this
 
-- Dynamic vendor builds via `config.ini` and a Python helper: clone, build, and include JARs from source (`lib/vendor` → `lib/build`). See `docs/SourceBuildingPlugin.md`.
-- ThriftTsConfig workspace generates a binary `config` payload from `src/config/` TypeScript at build time and places it into `src/main/deploy/config`.
-- AdvantageKit logging preset for REAL, SIM, and REPLAY modes.
-- Protobuf-lite support for robot messaging (`src/proto` compiled to Java during build).
+- **You want one place to start every new robot.** Command-based scaffold, logging, vendor deps, and config are already wired.
+- **You tweak vendor code a lot.** Libraries like `PWRUPCore`, `autobahn_client`, and `SwerveDrive` can be built straight from their Git repos on every build.
+- **You like typed configuration.** All robot config lives in TypeScript under `src/config`, then gets compiled into a compact binary for the robot and backends to consume.
+- **You care about logs.** AdvantageKit is already integrated for REAL/SIM/REPLAY modes.
 
 ---
 
 ## Prerequisites
 
-- Java 17 (required by WPILib 2025)
-- Node.js 18+ and npm
-- Python 3.9+
-- Thrift compiler (`thrift`) on PATH for regenerating TS types in `ThriftTsConfig` (only if you modify schemas)
+- **Java 17** (required by WPILib 2025)
+- **Node.js 18+ and npm**
+- **Python 3.9+**
+- **Thrift compiler** (`thrift`) on your `PATH` if you plan to change Thrift schemas
 
 ---
 
-## Quick Start
+## Quick start
 
-1. Clone the base
+1. **Clone the base**
 
 ```bash
 git clone <this-repo> my-robot
 cd my-robot
 ```
 
-2. Install Node workspace deps (for config generation)
+2. **Install Node deps for config + Thrift tooling**
 
 ```bash
 npm install
 ```
 
-3. Configure dynamic vendor libraries (optional)
+3. **Choose which vendor libraries build from source**
 
-Edit `config.ini` to choose which libraries build from source:
+Edit `config.ini` to match the libraries and branches you want:
 
 ```ini
 [PWRUPCore]
@@ -58,97 +59,119 @@ branch = main
 force_clone = false
 ```
 
-On build, repos in `config.ini` with `build_dynamically = true` are cloned to `lib/vendor/`, built with their own Gradle, and JARs are copied to `lib/build/` and added to the classpath.
+On `./gradlew build`, any section with `build_dynamically = true` is:
 
-4. Customize robot configuration
+- cloned into `lib/vendor/`
+- built with that repo’s own Gradle build
+- copied into `lib/build/` and wired into the Java classpath
 
-Edit TypeScript files in `src/config/` (e.g., cameras, LiDAR, AprilTags, pose extrapolator, pathfinding). The build runs `npm run config -- --dir src/config` and writes the generated binary to `src/main/deploy/config`.
+4. **Describe your robot in TypeScript**
 
-5. Build, simulate, or deploy
+Edit the files in `src/config/` (cameras, LiDAR, AprilTags, pose extrapolator, pathfinding, etc.).  
+During the Gradle build, `npm run config -- --dir src/config` is called and the resulting binary `config` file is written to `src/main/deploy/config`.
+
+5. **Build, simulate, and deploy**
 
 ```bash
-# Build Java + generate config + build dynamic vendors
+# Full Java build + config generation + dynamic vendor builds
 ./gradlew build
 
-# Run simulator GUI
+# WPILib simulator GUI
 ./gradlew simulateJava
 
-# Deploy to RoboRIO
-./gradlew deploy -PteamNumber=<TEAM>
+# Deploy to your RoboRIO
+./gradlew deploy -PteamNumber=<TEAM_NUMBER>
 ```
 
----
+Gradle is also wired to:
 
-## Project Layout
-
-- `src/main/java/frc/robot` — `Robot`, `RobotContainer`, constants, commands, subsystems scaffold.
-- `src/config` — TypeScript config authoring; compiled to Thrift binary at build and deployed to `deploy/config`.
-- `src/proto` — Protobuf definitions compiled to Java (lite) during build.
-- `ThriftTsConfig` — Node workspace for config generation and Thrift type generation.
-- `lib/vendor` — Cloned source repositories for dynamic vendor builds.
-- `lib/build` — Built JARs collected from vendor repos (auto-added to classpath).
+- run `make prep-project` to install backend Python dependencies
+- generate Protobuf Java code before compiling
+- deploy the backend with `make deploy-backend` via the `applyBackend` task
 
 ---
 
-## Build Details
+## Project layout (high level)
 
-- `build.gradle`
-  - Applies `edu.wpi.first.GradleRIO` 2025.2.1 and configures RoboRIO deploy artifacts
-  - Protobuf Java 3.22.2 (lite) generation from `src/proto`
-  - Lombok (compileOnly/annotationProcessor)
-  - JUnit 5 for tests
-  - AdvantageKit logging wiring in `Robot.java`
-  - Two custom steps:
-    - Dynamic vendor build: runs `scripts/clone_and_build_repos.py` using `config.ini`, then adds `lib/build/*.jar`
-    - Config generation: runs `npm run config -- --dir src/config` and writes to `src/main/deploy/config`
+- `src/main/java/frc/robot` – main robot code (`Robot`, `RobotContainer`, constants, subsystems, commands)
+- `src/config` – TypeScript configuration that becomes the deployed Thrift binary `config`
+- `src/proto` – Protobuf definitions; compiled to **lite** Java classes during the build
+- `src/backend/python` – Python backend utilities (camera abstraction, replay tools, config loader, etc.)
+- `src/backend/rust` – Rust backend library for config, math, and sensor utilities
+- `ThriftTsConfig` – Node workspace that turns Thrift schemas into TS types and builds the config binary
+- `lib/vendor` – source checkouts of dynamically built vendor libraries
+- `lib/build` – JARs produced from those vendors and added to the Java classpath
+
+If you want more detail on the dynamic source-building system, see `docs/SourceBuildingPlugin.md`.
 
 ---
 
-## ThriftTsConfig (configs)
+## ThriftTsConfig and configuration workflow
 
-- Edit `src/config/**` TypeScript to author your robot configuration.
-- To regenerate Thrift TS types after changing schemas under `ThriftTsConfig/schema`, run:
+- Edit `src/config/**` in TypeScript using the generated Thrift types from `ThriftTsConfig`.
+- On a normal Gradle build, `npm run config -- --dir src/config` is executed and writes a single `config` file into `src/main/deploy`.
+- Both the Java robot code and backend processes can read that same config.
+
+When you change Thrift schemas under `ThriftTsConfig/schema`, regenerate the TS types:
 
 ```bash
 npm run generate-thrift
 ```
 
-Output types appear under `ThriftTsConfig/generated/thrift` and are imported by the config code.
+Generated types live under `ThriftTsConfig/generated/thrift` and are imported by your TS config code.
 
-Advanced usage (JSON or file output) is documented in `ThriftTsConfig/README.md`.
-
----
-
-## Modes and Logging
-
-`BotConstants` selects mode:
-
-- REAL: writes AdvantageKit logs to the roboRIO
-- SIM: NT4 publisher with GUI
-- REPLAY: reads WPILOG and writes a new `_sim` log
-
-Switch sim vs real by editing `BotConstants` when not on a roboRIO.
+For advanced config tooling (alternate outputs, JSON helpers, etc.), see `ThriftTsConfig/README.md`.
 
 ---
 
-## Common Commands
+## Logging modes
+
+`BotConstants` controls how AdvantageKit runs:
+
+- **REAL** – logs written on the roboRIO
+- **SIM** – NT4 publisher plus GUI
+- **REPLAY** – reads a `.wplog` file and writes a new `_sim` log
+
+Switch between REAL and SIM in `BotConstants` when running off-roboRIO.
+
+---
+
+## Backend deployment (Python/Rust side)
+
+The backend system (under `src/backend`) is deployed alongside the robot using Gradle:
+
+- `build.gradle` wires `tasks.deploy` to an `applyBackend` task that runs `make deploy-backend`.
+- `src/backend/deploy.py` defines which modules are built and deployed (Protobuf and Thrift by default, with hooks for C++, Rust, and Python processes).
+- Deployment can discover Pis automatically or be pointed at fixed addresses via `DeploymentOptions`.
+
+You normally do not need to touch this to get started, but it is there if you want multi-process sensor or vision backends.
+
+---
+
+## Common commands
 
 ```bash
-# Build everything
+# Full build (Java + config + dynamic vendors + proto generation)
 ./gradlew build
 
-# Clean cached vendor outputs
+# Clean out dynamically built vendor outputs
 rm -rf lib/vendor lib/build
 
-# Regenerate Thrift TS types
+# Regenerate Thrift TS types after changing schemas
 npm run generate-thrift
 
-# Generate config manually (stdout as base64)
+# Manually generate the config (base64 to stdout)
 npm run config -- --dir src/config
 ```
 
 ---
 
-## Contributing / Using as a Base
+## Using this as your base
 
-This repository is intended to be cloned per-robot and customized. If you improve the base, open a PR here with concise context. Keep components modular and favor small, focused classes and commands.
+The expectation is that you **clone or fork this once per robot**, then:
+
+- keep the Gradle, config, and backend pieces mostly as-is
+- add robot-specific subsystems, commands, and constants
+- extend the TypeScript config as your robot grows
+
+If you find improvements to the base itself, open a pull request with a short justification and keep the pieces modular and easy to reason about.
