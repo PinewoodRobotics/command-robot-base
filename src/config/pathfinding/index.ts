@@ -21,6 +21,14 @@ const pathfinding_config: PathfindingConfig = {
   },
   publish_map: true,
   map_pub_topic: "pathfinding_map",
+  x_map_to_meters: {
+    non_unit_to_unit: 5.698006, // px/m
+    unit_to_non_unit: 0.1755, // m/px
+  },
+  y_map_to_meters: {
+    non_unit_to_unit: 5.714286, // px/m
+    unit_to_non_unit: 0.175, // m/px
+  },
 };
 
 export default pathfinding_config;

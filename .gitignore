@@ -199,3 +199,5 @@ src/backend/generated/
 *.pyc
 *.pyo
 *.pyw
+target/
+*.pyc

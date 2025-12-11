@@ -1,6 +1,6 @@
 import { createCanvas } from "canvas";
-import fs from "fs";
-import type { MapData as MapDataThrift } from "../../../blitz/generated/thrift/gen-nodejs/common_types";
+import * as fs from "fs";
+import type { MapData as MapDataThrift } from "generated/thrift/gen-nodejs/common_types";
 
 export type MapData = MapDataThrift;
 
@@ -34,11 +34,7 @@ export function fromImageToMap(
           const r = imageData[i * 4];
           const g = imageData[i * 4 + 1];
           const b = imageData[i * 4 + 2];
-          if (r === 255 && g === 255 && b === 255) {
-            boolArray.push(false);
-          } else {
-            boolArray.push(true);
-          }
+          boolArray.push(r === 255 && g === 255 && b === 255);
         }
       }
     }

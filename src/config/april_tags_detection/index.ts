@@ -1,4 +1,7 @@
-import { AprilDetectionConfig } from "generated/thrift/gen-nodejs/apriltag_types";
+import {
+  AprilDetectionConfig,
+  SpecialDetectorType,
+} from "generated/thrift/gen-nodejs/apriltag_types";
 
 export const april_tag_detection_config: AprilDetectionConfig = {
   tag_size: 0.17,
@@ -10,10 +13,18 @@ export const april_tag_detection_config: AprilDetectionConfig = {
   decode_sharpening: 0.25,
   searchpath: ["apriltags"],
   debug: false,
-  message: {
-    post_camera_output_topic: "apriltag/camera",
-    post_tag_output_topic: "apriltag/tag",
-  },
+  post_tag_output_topic: "apriltag/tag",
   send_stats: true,
   stats_topic: "apriltag/stats",
+  pi_name_to_special_detector_config: {
+    // this section is for special detectors. This means that if you want to use a non-standard detector, say GPU based
+    // that only works on a specific Pi, you can add it here with the Pi name as the key.
+    /*
+    jetson1: {
+      type: SpecialDetectorType.GPU_CUDA,
+      py_lib_searchpath:
+        "/opt/blitz/B.L.I.T.Z/build/release/2.35/aarch64/cpp/cuda-tags-lib/",
+    },
+    */
+  },
 };
