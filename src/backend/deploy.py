@@ -18,7 +18,7 @@ def get_modules() -> list[_Module]:
     ]
 
     """
-    This module requires a build (docker). Both require some specific configuration related to naming.
+    This module requires a build (docker). All three require some specific configuration related to naming.
 
     ModuleTypes.CPPLibraryModule()
     ModuleTypes.CPPRunnableModule()
@@ -26,7 +26,7 @@ def get_modules() -> list[_Module]:
     """
 
     """
-    This module does not require a build or docker.
+    This module does not require build or docker.
     
     Example python process. This would go into python/pos_extrapolator/ folder
     and would have a main.py file that would be runnable and would start an inf loop 

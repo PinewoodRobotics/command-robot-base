@@ -1,3 +1,5 @@
+# note: need to re-flash raspberry pi to get these to work on the backend.
+
 --find-links https://tortall.net/~robotpy/wheels/2023/raspbian/
 --prefer-binary
 

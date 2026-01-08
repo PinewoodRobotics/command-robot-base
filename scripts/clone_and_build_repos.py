@@ -1,4 +1,8 @@
-import sys
+"""
+Simple single-file script to clone and build GitHub libraries from a .ini file.
+Choosing .ini because .toml is not by default supported by python.
+"""
+
 import os
 import subprocess
 import shutil
@@ -6,7 +10,6 @@ import glob
 import argparse
 import configparser
 import logging
-import stat
 
 
 def check_folders():
