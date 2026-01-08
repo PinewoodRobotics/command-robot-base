@@ -21,19 +21,27 @@ import pwrup.frc.core.online.raspberrypi.PrintPiLogs;
 
 public class Robot extends LoggedRobot {
 
-  @Getter
+  @Getter // created the "getCommunicationClient"
   private final OptionalAutobahn communicationClient = new OptionalAutobahn();
-  @Getter
+  @Getter // created the "getOnlineStatus"
   private boolean onlineStatus;
 
   private RobotContainer m_robotContainer;
 
   public Robot() {
+    // Start advantage kit logging. This is required for the robot to log data to
+    // the dashboard.
     Logger.addDataReceiver(new NT4Publisher());
+    // Actually start the logger. This is a pattern where you first set the data
+    // receivers, then start the logger.
     Logger.start();
 
-    RPC.SetClient(communicationClient);
+    RPC.SetClient(communicationClient); // set the communication client to the RPC service.
+    // after this, you should be able to use the RPC service to call methods on the
+    // backend. See the RPC class for more details.
     PrintPiLogs.ToSystemOut(communicationClient, TopicConstants.kPiTechnicalLogTopic);
+    // print the pi technical log to the system out. otherwise there will not be any
+    // logs printed to the dashboard.
   }
 
   @Override
@@ -45,6 +53,7 @@ public class Robot extends LoggedRobot {
   @Override
   public void robotPeriodic() {
     CommandScheduler.getInstance().run();
+
     // Expose Autobahn connection status to AdvantageKit/NT for visibility.
     Logger.recordOutput("Autobahn/Connected", communicationClient.isConnected() && onlineStatus);
   }
@@ -94,6 +103,10 @@ public class Robot extends LoggedRobot {
     }
   }
 
+  /**
+   * Initializes the network. This is used to connect to the pi network and start
+   * the processes on the pis.
+   */
   private void initializeNetwork() {
     new Thread(() -> {
       PiConstants.network.initialize();

@@ -1,6 +1,9 @@
 import argparse
 from enum import Enum
+import os
 import subprocess
+import sys
+from types import ModuleType
 import psutil
 import json
 import re
@@ -10,6 +13,8 @@ import socket
 
 from backend.python.common.config import from_uncertainty_config
 from backend.generated.thrift.config.ttypes import Config
+import importlib
+import importlib.util
 
 self_name: None | str = None
 
@@ -130,3 +135,39 @@ def load_configs() -> tuple[BasicSystemConfig, Config]:
         raise ValueError("Failed to load configs")
 
     return basic_system_config, config
+
+
+def setup_shared_library_python_extension(
+    *,
+    module_name: str,
+    py_lib_searchpath: str,
+    module_basename: str | None = None,
+) -> ModuleType:
+    module_basename = module_basename if module_basename else module_name
+
+    module_parent = str(os.path.dirname(str(py_lib_searchpath)))
+    if module_parent not in sys.path:
+        sys.path.insert(0, module_parent)
+
+    module_path = os.path.join(str(py_lib_searchpath), module_basename)
+    extension_file: str | None = None
+    dir_path = os.path.dirname(module_path)
+    base_stem = os.path.basename(module_path)
+    if os.path.isdir(dir_path):
+        for fname in os.listdir(dir_path):
+            if (
+                fname.startswith(base_stem)
+                and (fname.endswith(".so") or fname.endswith(".pyd"))
+                and os.path.isfile(os.path.join(dir_path, fname))
+            ):
+                extension_file = os.path.join(dir_path, fname)
+                break
+
+    spec = importlib.util.spec_from_file_location(module_name, extension_file)
+    if spec is None or spec.loader is None:
+        raise ImportError(
+            f"Failed to create spec for {module_name} from {extension_file}"
+        )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
