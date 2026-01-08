@@ -4,7 +4,7 @@
 
 This is a command-based FRC robot starter that glues together:
 
-- **WPILib 2025 + GradleRIO** for the main Java robot code
+- **WPILib 2026 + GradleRIO** for the main Java robot code
 - **AdvantageKit** for logging, replay, and sim workflows
 - **TypeScript-authored robot config** compiled to a Thrift binary and deployed with the robot
 - **Dynamically built vendor libraries** pulled from source at build time
@@ -25,7 +25,7 @@ The intent is simple: clone this once per robot, tune the config, drop in your s
 
 ## Prerequisites
 
-- **Java 17** (required by WPILib 2025)
+- **Java 17** (required by WPILib 2026)
 - **Node.js 18+ and npm**
 - **Python 3.9+**
 - **Thrift compiler** (`thrift`) on your `PATH` if you plan to change Thrift schemas

@@ -1,6 +1,6 @@
 plugins {
     id "java"
-    id "edu.wpi.first.GradleRIO" version "2025.2.1"
+    id "edu.wpi.first.GradleRIO" version "2026.1.1"
     id "com.google.protobuf" version "0.9.3"
     id "groovy"
 }
@@ -107,7 +107,7 @@ def generateConfig() {
     def stderr = new ByteArrayOutputStream()
 
     try {
-        exec {
+        project.exec {
             commandLine "npm", "run", "config", "--silent", "--", "--dir", "src/config"
             standardOutput = stdout
             errorOutput = stderr
@@ -131,7 +131,7 @@ def buildDynamically(configFilePath) {
     def buildFailed = false
 
     try {
-        exec {
+        project.exec {
             commandLine "python3", "scripts/clone_and_build_repos.py", "--config-file-path", configFilePath
             standardOutput = stdout
             errorOutput = stderr
@@ -192,7 +192,7 @@ def applyBackend(expectedNumOfPis) {
   def buildFailed = false
 
   try {
-    exec {
+    project.exec {
       commandLine "make", "deploy-backend"
       standardOutput = stdout
       errorOutput = stderr
@@ -221,7 +221,7 @@ def applyBackend(expectedNumOfPis) {
 }
 
 def installPythonDependencies() {
-  exec {
+  project.exec {
     commandLine "make", "prep-project"
   }
 }

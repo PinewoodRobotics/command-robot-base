@@ -201,3 +201,5 @@ src/backend/generated/
 *.pyw
 target/
 *.pyc
+
+src/main/deploy/config
