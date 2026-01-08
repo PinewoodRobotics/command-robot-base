@@ -16,7 +16,7 @@ PROTO_PY_GEN_DIR = $(PROTO_GEN_DIR)/python
 
 prep-project:
 	if [ ! -d ".venv" ]; then \
-		python -m venv .venv; \
+		python3 -m venv .venv; \
 	fi
 
 	.venv/bin/pip install -r requirements.txt
