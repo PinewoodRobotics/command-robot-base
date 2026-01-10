@@ -138,10 +138,12 @@ def _deploy_backend_to_pi(
         "-p",
         pi.password,
         "ssh",
+        "-o",
+        "StrictHostKeyChecking=no",
         "-p",
         str(getattr(pi, "port", 22)),
         f"ubuntu@{pi.address}",
-        f"sudo mkdir -p {remote_target_dir}",
+        f"mkdir -p {remote_target_dir}",
     ]
 
     mkdir_proc = subprocess.run(mkdir_cmd)
@@ -248,10 +250,6 @@ def _deploy_compilable(pi: _RaspberryPi, modules: list[_Module]):
     from backend.deployment.compilation.cpp.cpp import CPlusPlus
     from backend.deployment.compilation.rust.rust import Rust
 
-    if os.path.exists(LOCAL_BINARIES_PATH):
-        shutil.rmtree(LOCAL_BINARIES_PATH)
-    os.makedirs(LOCAL_BINARIES_PATH, exist_ok=True)
-
     if SHOULD_REBUILD_BINARIES:
         for module in modules:
             if not isinstance(module, _CompilableModule):
@@ -350,7 +348,7 @@ class ModuleTypes:
 
         def get_run_command(self) -> str:
             extra_run_args = self.get_extra_run_args()
-            return f"{LOCAL_BINARIES_PATH}/{get_self_ldd_version()}/{get_self_architecture()}/{self.runnable_name} {extra_run_args}".strip()
+            return f"{LOCAL_BINARIES_PATH}/{get_self_ldd_version()}/{get_self_architecture()}/rust/{self.runnable_name}/{self.runnable_name} {extra_run_args}".strip()
 
     @dataclass
     class ProtobufModule(_CompilableModule):
@@ -403,6 +401,10 @@ class DeploymentOptions:
     def with_automatic_discovery(
         modules: list[_Module], backend_local_path: str = "src/backend/"
     ):
+        if os.path.exists(LOCAL_BINARIES_PATH):
+            shutil.rmtree(LOCAL_BINARIES_PATH)
+        os.makedirs(LOCAL_BINARIES_PATH, exist_ok=True)
+
         raspberrypis = _RaspberryPi.discover_all()
         DeploymentOptions.with_preset_pi_addresses(
             raspberrypis, modules, backend_local_path

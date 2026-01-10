@@ -1,15 +1,17 @@
 import time
 from logging import info
+from typing import cast
 
 import cv2
+from cv2.typing import MatLike
 import numpy as np
 
-from backend.python.common.debug.logger import stats_for_nerds
 from backend.generated.proto.python.sensor.camera_sensor_pb2 import (
     ImageCompression,
     ImageData,
     ImageFormat,
 )
+from backend.python.common.debug.logger import stats_for_nerds
 
 
 def from_proto_format(format: ImageFormat) -> int:
@@ -58,10 +60,15 @@ def compress_image(
 def decode_image(proto_image: ImageData) -> np.ndarray:
     channels = from_proto_format_to_n_channels(proto_image.format)
     if proto_image.compression == ImageCompression.JPEG:
-        return cv2.imdecode(
-            np.frombuffer(proto_image.image, dtype=np.uint8),
+        decoded = cv2.imdecode(
+            cast(MatLike, np.frombuffer(proto_image.image, dtype=np.uint8)),
             from_proto_format(proto_image.format),
         )
+        if decoded is None:
+            raise ValueError(
+                f"Failed to decode JPEG image (format={proto_image.format}, bytes={len(proto_image.image)})"
+            )
+        return cast(np.ndarray, decoded)
     else:
         return np.frombuffer(proto_image.image, dtype=np.uint8).reshape(
             (proto_image.height, proto_image.width, channels)

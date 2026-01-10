@@ -87,28 +87,6 @@ def stats_for_nerds(print_stats: bool = True):
     return decorator
 
 
-def stats_for_nerds_akit(send_stats: bool = True, print_stats: bool = True):
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            start_time = time.time()
-            result = func(*args, **kwargs)
-            end_time = time.time()
-            if send_stats:
-                log_to_akit(func.__name__, [(end_time - start_time) * 1000])
-
-            if print_stats:
-                info(
-                    f"Function {func.__name__} took {(end_time - start_time) * 1000}ms to run."
-                )
-
-            return result
-
-        return wrapper
-
-    return decorator
-
-
 def init_logging(
     prefix: str,
     log_level: LogLevel,
