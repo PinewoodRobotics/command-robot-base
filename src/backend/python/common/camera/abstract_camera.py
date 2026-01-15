@@ -48,12 +48,6 @@ class AbstractCaptureDevice:
         exposure_time: float = -1,
         brightness: int | None = None,
     ) -> None:
-        if isinstance(camera_port, str):
-            try:
-                camera_port: int = int(camera_port)
-            except ValueError:
-                pass
-
         self.port: int | str = camera_port
         self.camera_name: str = camera_name
         self.width: int = width
