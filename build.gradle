@@ -1,6 +1,6 @@
 plugins {
     id "java"
-    id "edu.wpi.first.GradleRIO" version "2026.1.1"
+    id "edu.wpi.first.GradleRIO" version "2026.2.1"
     id "com.google.protobuf" version "0.9.3"
     id "groovy"
 }
@@ -22,6 +22,7 @@ repositories {
 }
 
 def ROBOT_MAIN_CLASS = "frc.robot.Main"
+def EXPECTED_NUM_OF_PIS = 0;
 
 // Define deploy target and artifacts
 deploy {
@@ -120,6 +121,7 @@ def generateConfig() {
     } catch (Exception e) {
         println "Failed to generate config: ${e.message}"
         println "Error Output:\n${stderr.toString().trim()}"
+        throw e;
     }
 }
 
@@ -220,20 +222,6 @@ def applyBackend(expectedNumOfPis) {
   }
 }
 
-def installPythonDependencies() {
-  project.exec {
-    commandLine "make", "prep-project"
-  }
-}
-
-tasks.register("installPythonDependencies") {
-    group = "build"
-    description = "Install Python dependencies"
-    doLast {
-        installPythonDependencies()
-    }
-}
-
 buildDynamically("./config.ini")
 
 tasks.register("applyBackend") {
@@ -252,7 +240,6 @@ tasks.register("generateConfig") {
     }
 }
 
-tasks.build.dependsOn(tasks.installPythonDependencies)
 tasks.build.dependsOn(tasks.generateConfig)
 tasks.build.dependsOn(tasks.generateProto)
 
