@@ -150,6 +150,8 @@ make --version
 
 # Setting Up Workspace
 
+cd into your workspace. So, for example, `cd ~/Documents/command-base-robot`.
+
 ## Clone the repository
 
 ```bash
