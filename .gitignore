@@ -203,3 +203,4 @@ target/
 *.pyc
 
 src/main/deploy/config
+gen-nodejs/

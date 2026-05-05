@@ -1,12 +1,13 @@
 {
   "name": "command-robot-base",
   "version": "1.0.0",
-  "description": "Command robot base project with TypeScript configuration",
-  "workspaces": [
-    "ThriftTsConfig"
-  ],
+  "description": "Command robot base configuration project",
   "scripts": {
-    "config": "npm run -w ThriftTsConfig config -- --dir src/config",
-    "generate-thrift": "npm run -w ThriftTsConfig generate-thrift --"
+    "config": "tsx scripts/config-generation/compile-config.ts --dir config/main/ --protocol binary --schema config/gen-nodejs/config_types.js",
+    "generate-thrift": "node scripts/config-generation/thrift-to-ts.js config/schema config/"
+  },
+  "dependencies": {
+    "thrift": "^0.22.0",
+    "tsx": "^4.21.0"
   }
 }
