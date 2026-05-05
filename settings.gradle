@@ -25,3 +25,13 @@ pluginManagement {
         }
     }
 }
+
+// BEGIN DYNAMIC DEPENDENCY BUILD
+// Dynamic vendor dependency Gradle/Python scripts.
+gradle.ext.cloneAndBuildPath = file("scripts/clone_and_build/").absolutePath
+// END DYNAMIC DEPENDENCY BUILD
+
+// BEGIN BLITZ BACKEND
+// B.L.I.T.Z backend path used by the backend Gradle task script.
+gradle.ext.backendPath = file("src/backend/").absolutePath
+// END BLITZ BACKEND

@@ -41,7 +41,9 @@ class CPPBuildConfig:
         cmake_lists_path: str = ".",
         cmake_args: list[str] | None = None,
         compiler_cmd: str = "make",
-        compiler_args: list[str | CPPBuildOptions] | None = None,
+        compiler_args: (  # pyright: ignore[reportRedeclaration]
+            list[str | CPPBuildOptions] | None
+        ) = None,  # pyright: ignore[reportRedeclaration]
         libs: list[CPPLibrary] | None = None,
         extra_docker_commands: list[str] | None = None,
         clean_build_dir: bool = False,
@@ -57,11 +59,12 @@ class CPPBuildConfig:
 
         cmake_args_str = " ".join(cmake_args)
         compiler_args_str = " ".join(compiler_args)
+        build_dir = "${CPP_BUILD_DIR:-build}"
 
         build_cmd = (
-            (f"rm -rf build && " if clean_build_dir else "")
-            + f"cmake -B build -S {cmake_lists_path} {cmake_args_str} && "
-            + f"cd build && {compiler_cmd} {compiler_args_str}"
+            (f"rm -rf {build_dir} && " if clean_build_dir else "")
+            + f"cmake -B {build_dir} -S {cmake_lists_path} {cmake_args_str} && "
+            + f"cd {build_dir} && {compiler_cmd} {compiler_args_str}"
         )
 
         return cls(

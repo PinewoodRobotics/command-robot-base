@@ -7,19 +7,6 @@ members = ["src/backend/rust/*"]
 # dependencies for the rust workspace. This is a list of dependencies that are shared by all the rust modules in the workspace.
 [workspace.dependencies]
 tokio = { version = "1.36", features = ["full"] }
-tokio-tungstenite = "0.26.2"
+tokio-tungstenite = "0.29.0"
 futures-util = "0.3"
-prost = "0.13.5"
-nalgebra = "0.33.2"
-serde = { version = "1.0", features = ["derive"] }
-bytes = "1.5"
-serde_json = "1.0"
-url = "2.5"
-thrift = "0.17"
-base64 = "0.21"
-ordered-float = "4.0"
-prost-build = "0.13.5"
-
-
-[workspace.metadata]
-rust-project = { path = "backend/rust" }
+nalgebra = "0.34.2"

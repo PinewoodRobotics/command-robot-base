@@ -40,6 +40,7 @@ public final class Constants {
 ```
 
 What each constant is for:
+
 - `kCanId`: tells your code which Spark MAX on the CAN bus to talk to.
 - `kMotorInverted`: fixes direction without rewiring.
 - `kGearRatio`: lets you convert between motor space and mechanism space.
@@ -66,7 +67,7 @@ import org.littletonrobotics.junction.Logger;
 
 public class MyMotorSubsystem extends SubsystemBase {
   // This object represents the physical Spark MAX on CAN.
-  private final CANSparkMax motor =
+  private final SparkMax motor =
       new CANSparkMax(Constants.MyMotor.kCanId, MotorType.kBrushless);
 
   // This reads the absolute encoder through the Spark MAX.
@@ -179,6 +180,7 @@ public class MyMotorSubsystem extends SubsystemBase {
 ```
 
 What each method is doing (short):
+
 - `getPositionRot()`: reads the absolute encoder, already converted into mechanism rotations.
 - `stop()`: stops the motor output immediately.
 - `setPercent(percent)`: manual “just spin it” control for testing.
@@ -194,11 +196,13 @@ What each method is doing (short):
 ## PID (how it makes the motor move)
 
 The entire “make it move to a target” flow is:
+
 - `setGoalRot(target)`
 - call `runClosedLoopToGoal()` repeatedly while you want it controlling
 - log `Goal`, `Pos`, and `Error` so you can tune and verify direction
 
 Tuning order:
+
 - Start with **P only**, increase until it moves strongly but does not oscillate badly.
 - Add a little **D** if it overshoots or oscillates.
 - Add **I** only if it consistently stops short under load.
@@ -230,6 +234,7 @@ public class RobotContainer {
 ```
 
 What each binding means:
+
 - `whileTrue(...)`: the command runs only while the button is held.
 - `onTrue(...)`: the command starts once when the button is pressed.
 
@@ -240,6 +245,7 @@ What each binding means:
 - If `PosRot` never changes, the encoder wiring/config is wrong.
 - If `ErrorRot` grows when you command a move, your sign convention is flipped.
 - If `AppliedOutput` is high but position barely changes, you may be stalled or geared too tall.
+
 # Spark MAX + Absolute Encoder Motor Subsystem (Java) – Notes for FRC
 
 This doc explains the FRC-specific concepts behind a one-motor subsystem using a REV **Spark MAX**, an **absolute encoder**, **gear reduction**, **PID**, and **AdvantageScope** logging.
@@ -317,12 +323,14 @@ This doc explains the FRC-specific concepts behind a one-motor subsystem using a
 ## What a good motor subsystem contains
 
 ### What the constructor is for
+
 - **Create hardware objects** (Spark MAX, encoder) using IDs so code points at real devices.
 - **Configure the controller** (inversion, idle mode, current limit) so behavior is predictable.
 - **Configure sensor units** so your code uses mechanism units instead of raw numbers.
 - **Configure PID gains** once so closed-loop control works the same every time you deploy.
 
 ### What `periodic()` is for
+
 - **Log signals** and optionally run “background” control code that should happen every loop.
 
 ---
@@ -351,10 +359,12 @@ Logger.recordOutput("MySubsystem/Current", motor.getOutputCurrent());
 - **Setpoint**: the goal value you want the mechanism to reach.
 
 ### The basic PID loop you implement
+
 - **Pick a goal** in mechanism units.
 - **Run control repeatedly** so the motor keeps correcting toward that goal.
 
 ### Where PID can run
+
 - **On the Spark MAX** using its internal PID controller (`setReference(...)`).
 - **On the roboRIO** using WPILib’s `PIDController` and then sending the result to the motor.
 
@@ -378,10 +388,12 @@ The point is not the exact names, but having a small, consistent API you can reu
 ## Commands and button bindings (how you make it move)
 
 ### The idea
+
 - **A command keeps calling your subsystem methods** while it is scheduled.
 - **Buttons schedule commands**, so your joystick becomes the “when” and the command is the “what.”
 
 ### Jog while held (open-loop)
+
 - **Use a command that sets output every loop and stops when it ends**.
 
 Example pattern:
@@ -396,6 +408,7 @@ public Command jog(double percent) {
 ```
 
 ### Hold or move to a position while held (PID)
+
 - **Use a command that sets the goal and runs closed-loop every loop**.
 
 Example pattern:
@@ -410,6 +423,7 @@ public Command holdPosition(double position) {
 ```
 
 ### Bind in `RobotContainer`
+
 - **Use `whileTrue(...)`** when you want it active only while the button is held.
 
 Example bindings:
@@ -428,17 +442,20 @@ driver.b().whileTrue(mySubsystem.holdPosition(2.0));
 - **Moves the wrong way**: fix motor inversion or encoder inversion so your sign convention matches.
 - **PID oscillates**: lower P or add a small D.
 - **Never reaches goal**: increase P slightly, then add a small I only if you are consistently short.
+
 # Spark MAX + Absolute Encoder Motor Subsystem (Java) – Quick Recipe
 
 This is a short, reusable checklist for building a **single-motor** subsystem using a **REV Spark MAX** with an **absolute encoder**, plus **PID**, **AdvantageKit/AdvantageScope logging**, and a **button/joystick command**.
 
 ### Hardware checklist (fast)
+
 - **Motor + Spark MAX**: Connect motor to Spark MAX and power via PDP/PDH breakers.
 - **CAN**: Give the Spark MAX a unique CAN ID and confirm it shows up in REV Hardware Client.
 - **Absolute encoder wiring**: Wire the encoder to the Spark MAX’s absolute encoder port (duty-cycle) or the appropriate input for your encoder.
 - **Mechanism**: Install gearing and write down the **gear ratio** \(motor rotations : mechanism rotations\).
 
 ### Project setup checklist (fast)
+
 - **Vendor libs**: Install **REVLib** and **AdvantageKit (Littleton Robotics)** for logging.
 - **Robot structure**: Put mechanism logic in a class that extends `SubsystemBase`.
 - **Constants**: Keep CAN IDs, inversion, gear ratio, and PID gains in a `Constants` file.
@@ -448,6 +465,7 @@ This is a short, reusable checklist for building a **single-motor** subsystem us
 ## Step-by-step: make the subsystem (each step is 1 sentence)
 
 ### 1) Add constants you’ll reuse everywhere
+
 - **Create** `Constants.MotorSubsystem` with CAN ID, inversion, gear ratio, and PID gains.
 
 Example:
@@ -473,6 +491,7 @@ public final class Constants {
 ---
 
 ### 2) Create the subsystem class
+
 - **Create** `MotorSubsystem extends SubsystemBase` and keep Spark MAX setup inside the constructor.
 
 Template:
@@ -553,6 +572,7 @@ public class MotorSubsystem extends SubsystemBase {
 ---
 
 ## Gear ratio notes (keep it consistent)
+
 - **Write down** your ratio as \(motor rotations / mechanism rotations\) and use it everywhere.
 - **Pick one “unit”** for your subsystem API (mechanism rotations, degrees, meters) and stick to it.
 
@@ -561,14 +581,17 @@ public class MotorSubsystem extends SubsystemBase {
 ## Logging + AdvantageScope (debug fast)
 
 ### Why use `Logger` here
+
 - **You can see** sensor readings, goals, and motor output over time so you know what’s wrong quickly.
 
 ### What to log (minimum)
+
 - **Absolute position** (in your chosen units).
 - **Goal setpoint** (same units).
 - **Applied output, voltage, current** (to catch brownouts/stalls).
 
 ### Quick “is it wired right?” checks
+
 - **If position never changes**, your encoder wiring/config is wrong.
 - **If position moves backwards**, flip encoder inversion or mechanically flip.
 - **If motor fights itself**, check motor inversion vs encoder inversion.
@@ -578,6 +601,7 @@ public class MotorSubsystem extends SubsystemBase {
 ## PID: make the motor move to a target (position control)
 
 ### Minimal PID flow
+
 - **Set a goal** (setpoint) in mechanism units.
 - **Call** `pid.setReference(goal, kPosition)` repeatedly (typically in `periodic()` or a command).
 
@@ -591,6 +615,7 @@ public void moveToMechanismRotations(double rotations) {
 ```
 
 ### PID tuning mini-checklist (short)
+
 - **Start with only P**, then add D if it overshoots, and add I only if it never reaches steady-state.
 - **Lower P** if it oscillates, and raise P if it feels weak and never gets close.
 
@@ -599,6 +624,7 @@ public void moveToMechanismRotations(double rotations) {
 ## Commands: move when you press a button/joystick
 
 ### 1) Make a command that runs while held (easy)
+
 - **Use** `runEnd` or `StartEndCommand` so it stops when released.
 
 Example (percent output while held):
@@ -615,6 +641,7 @@ public Command jogForwardCommand() {
 ```
 
 ### 2) Make a command that moves to a setpoint (PID)
+
 - **Use** `run` and continuously call `setReference` while the command is scheduled.
 
 Example (hold button to hold position at 2 rotations):
@@ -626,6 +653,7 @@ public Command holdAtTwoRotations() {
 ```
 
 ### 3) Bind it to a controller button in `RobotContainer`
+
 - **Bind** with `whileTrue(...)` for “only while held” behavior.
 
 Example:
@@ -647,6 +675,7 @@ public class RobotContainer {
 ---
 
 ## Reuse this doc for other subsystems (copy/paste checklist)
+
 - **Pick** your sensor (encoder, limit switch, gyro) and decide your “units”.
 - **Define** constants (IDs, inversion, ratios, gains) in `Constants`.
 - **Build** a `SubsystemBase` with clear public methods (`setGoal`, `getPosition`, `stop`).

@@ -21,6 +21,8 @@ repositories {
     }
 }
 
+apply from: "${gradle.ext.cloneAndBuildPath}/clone_and_build_repos.gradle"
+
 def ROBOT_MAIN_CLASS = "frc.robot.Main"
 def EXPECTED_NUM_OF_PIS = 0;
 
@@ -53,6 +55,7 @@ def includeDesktopSupport = false
 dependencies {
     implementation wpi.java.deps.wpilib()
     implementation wpi.java.vendor.java()
+    implementation buildDynamically("./config.ini")
 
     roborioDebug wpi.java.deps.wpilibJniDebug(wpi.platforms.roborio)
     roborioDebug wpi.java.vendor.jniDebug(wpi.platforms.roborio)
@@ -67,10 +70,10 @@ dependencies {
     nativeRelease wpi.java.deps.wpilibJniRelease(wpi.platforms.desktop)
     nativeRelease wpi.java.vendor.jniRelease(wpi.platforms.desktop)
     simulationRelease wpi.sim.enableRelease()
-    
+
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
-    implementation "com.google.protobuf:protobuf-java:3.22.2"
+    implementation "com.google.protobuf:protobuf-java:+"
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -103,176 +106,28 @@ tasks.withType(JavaCompile) {
     options.compilerArgs.add '-XDstringConcat=inline'
 }
 
-def generateConfig() {
-    def stdout = new ByteArrayOutputStream()
-    def stderr = new ByteArrayOutputStream()
-
-    try {
-        project.exec {
-            commandLine "npm", "run", "config", "--silent", "--", "--dir", "src/config"
-            standardOutput = stdout
-            errorOutput = stderr
-            ignoreExitValue = false
-        }
-
-        def deployDir = new File("src/main/deploy")
-        deployDir.mkdirs()
-        new File(deployDir, "config").text = stdout.toString().trim()
-    } catch (Exception e) {
-        println "Failed to generate config: ${e.message}"
-        println "Error Output:\n${stderr.toString().trim()}"
-        throw e;
-    }
-}
-
-// Function to build dependencies dynamically. This calls a python script that clones and builds the dependencies.
-// It then adds the jars to the classpath.
-def buildDynamically(configFilePath) {
-    def stdout = new ByteArrayOutputStream()
-    def stderr = new ByteArrayOutputStream()
-    def buildFailed = false
-
-    try {
-        project.exec {
-            commandLine "python3", "scripts/clone_and_build_repos.py", "--config-file-path", configFilePath
-            standardOutput = stdout
-            errorOutput = stderr
-            ignoreExitValue = false
-        }
-    } catch (Exception e) {
-        buildFailed = true
-        // ANSI escape code for red: \u001B[31m, reset: \u001B[0m
-        println "\n\n" +
-                "\u001B[31m" +
-                "#############################################################\n" +
-                "#                                                           #\n" +
-                "#                FAILED TO BUILD DEPENDENCIES!              #\n" +
-                "#                                                           #\n" +
-                "#############################################################\n" +
-                "\u001B[0m"
-        println "\u001B[31mExecution failed: ${e.message}\u001B[0m"
-    }
-
-    if (stdout.toString().contains("FAILED") || stderr.toString().toLowerCase().contains("error") || buildFailed) {
-        println "\n\n" +
-                "\u001B[31m" +
-                "#############################################################\n" +
-                "#                                                           #\n" +
-                "#                FAILED TO BUILD DEPENDENCIES!              #\n" +
-                "#                                                           #\n" +
-                "#############################################################\n" +
-                "\u001B[0m"
-        println "\u001B[31mError Output:\n${stderr.toString().trim()}\u001B[0m"
-        throw new Exception("Failed to build dependencies")
-    }
-
-    println "Standard Output:\n${stdout.toString().trim()}"
-    println "Error Output:\n${stderr.toString().trim()}"
-
-    // ANSI escape code for green: \u001B[32m, reset: \u001B[0m
-    println "\n\n" +
-        "\u001B[32m" +
-        "#############################################################\n" +
-        "#                                                           #\n" +
-        "#                BUILT DYNAMIC DEPENDENCIES!                #\n" +
-        "#                                                           #\n" +
-        "#############################################################\n" +
-        "\u001B[0m"
-
-    def jarFiles = fileTree(dir: "lib/build", include: '*.jar')
-
-    project.afterEvaluate {
-        dependencies {
-            implementation files(jarFiles)
-        }
-    }
-}
-
-def applyBackend(expectedNumOfPis) {
-  def stdout = new ByteArrayOutputStream()
-  def stderr = new ByteArrayOutputStream()
-  def buildFailed = false
-
-  try {
-    project.exec {
-      commandLine "make", "deploy-backend"
-      standardOutput = stdout
-      errorOutput = stderr
-      ignoreExitValue = false
-    }
-  } catch (Exception e) {
-    buildFailed = true
-    println "Failed to apply backend: ${e.message}"
-    println "Error Output:\n${stderr.toString().trim()}"
-  }
-
-  println stdout;
-  println stderr;
-
-  if (!stderr.toString().contains("Deployed on " + expectedNumOfPis.toString() + " Pis") && !stdout.toString().contains("Deployed on " + expectedNumOfPis.toString() + " Pis")) {
-    println ""
-    println "============================================================="
-    println "Failed to apply backend because it was not deployed on the expected number of Pis. Please set the expected number of Pis in the build.gradle file and try again (check 'EXPECTED_NUM_OF_PIS' variable)."
-    println "Expected number of Pis: " + expectedNumOfPis.toString()
-    println "Deployed number of Pis: " + stdout.toString().split("Deployed on ")[1].split(" Pis")[0]
-    println "============================================================="
-    println ""
-
-    throw new Exception("Failed to apply backend because it was not deployed on the expected number of Pis (expected " + expectedNumOfPis.toString() + " Pis, deployed " + stdout.toString().split("Deployed on ")[1].split(" Pis")[0] + " Pis)")
-  }
-}
-
-buildDynamically("./config.ini")
-
-tasks.register("applyBackend") {
-    group = "build"
-    description = "Apply backend"
-    doLast {
-        applyBackend(EXPECTED_NUM_OF_PIS)
-    }
-}
-
-tasks.register("generateConfig") {
-    group = "build"
-    description = "Generate config.json from TSX output"
-    doLast {
-        generateConfig()
-    }
-}
-
-tasks.build.dependsOn(tasks.generateConfig)
-tasks.build.dependsOn(tasks.generateProto)
-
-tasks.deploy.dependsOn(tasks.applyBackend)
-
+tasks.deploy.dependsOn("deployBackend")
 tasks.jar.dependsOn(tasks.generateProto)
 tasks.compileJava.dependsOn(tasks.generateProto)
 
-
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:3.22.2"
+        artifact = "com.google.protobuf:protoc:+"
     }
-    generateProtoTasks {
-        all().each { task ->
-            task.builtins {
-                java {
-                    option 'lite'
-                }
-            }
-        }
-    }
-
-    generatedFilesBaseDir = "$buildDir/generated/source"
 }
 
 sourceSets {
     main {
-        java {
-            srcDirs += "$buildDir/generated/source/proto/main/java"
-        }
         proto {
-            srcDirs = ['src/proto']
+            srcDir 'src/proto'
         }
     }
 }
+
+// BEGIN BLITZ BACKEND
+// B.L.I.T.Z backend integration.
+// This applies backend/deployment/gradle/build.gradle, which adds Gradle tasks
+// for the Python backend deployment workflow, including deployBlitz.
+// Gradle script plugin docs: https://docs.gradle.org/current/userguide/plugins.html#sec:script_plugins
+apply from: "${gradle.ext.backendPath}/deployment/gradle/build.gradle"
+// END BLITZ BACKEND

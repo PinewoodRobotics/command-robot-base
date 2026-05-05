@@ -1,0 +1,64 @@
+// Function to build dependencies dynamically. This calls a python script that clones and builds the dependencies.
+// It returns the built jars so it can be called directly from dependencies { implementation ... }.
+ext.buildDynamically = { configFilePath ->
+    def stdout = new ByteArrayOutputStream()
+    def stderr = new ByteArrayOutputStream()
+    def buildFailed = false
+
+    try {
+        def process = new ProcessBuilder(
+            "python3",
+            "${gradle.ext.cloneAndBuildPath}/clone_and_build_repos.py",
+            "--config-file-path",
+            configFilePath
+        )
+            .directory(rootProject.projectDir)
+            .start()
+
+        process.consumeProcessOutput(stdout, stderr)
+        def exitCode = process.waitFor()
+        if (exitCode != 0) {
+            buildFailed = true
+        }
+    } catch (Exception e) {
+        buildFailed = true
+        // ANSI escape code for red: \u001B[31m, reset: \u001B[0m
+        println "\n\n" +
+                "\u001B[31m" +
+                "#############################################################\n" +
+                "#                                                           #\n" +
+                "#                FAILED TO BUILD DEPENDENCIES!              #\n" +
+                "#                                                           #\n" +
+                "#############################################################\n" +
+                "\u001B[0m"
+        println "\u001B[31mExecution failed: ${e.message}\u001B[0m"
+    }
+
+    if (stdout.toString().contains("FAILED") || stderr.toString().toLowerCase().contains("error") || buildFailed) {
+        println "\n\n" +
+                "\u001B[31m" +
+                "#############################################################\n" +
+                "#                                                           #\n" +
+                "#                FAILED TO BUILD DEPENDENCIES!              #\n" +
+                "#                                                           #\n" +
+                "#############################################################\n" +
+                "\u001B[0m"
+        println "\u001B[31mError Output:\n${stderr.toString().trim()}\u001B[0m"
+        throw new Exception("Failed to build dependencies")
+    }
+
+    println "Standard Output:\n${stdout.toString().trim()}"
+    println "Error Output:\n${stderr.toString().trim()}"
+
+    // ANSI escape code for green: \u001B[32m, reset: \u001B[0m
+    println "\n\n" +
+        "\u001B[32m" +
+        "#############################################################\n" +
+        "#                                                           #\n" +
+        "#                BUILT DYNAMIC DEPENDENCIES!                #\n" +
+        "#                                                           #\n" +
+        "#############################################################\n" +
+        "\u001B[0m"
+
+    return files(fileTree(dir: "lib/build", include: '*.jar'))
+}
