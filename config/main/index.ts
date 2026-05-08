@@ -1,4 +1,4 @@
-import { Config } from "config/gen-nodejs/config_types";
+import { Config } from "../gen-nodejs/config_types";
 
 const config: Config = {};
 

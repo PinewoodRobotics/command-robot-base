@@ -9,12 +9,10 @@ use walkdir::WalkDir;
 extern crate prost_build;
 
 fn main() {
-    let workspace_dir = env::var("CARGO_WORKSPACE_DIR")
-        .or_else(|_| find_workspace_root())
-        .expect("Failed to find workspace root");
+    let workspace_dir = workspace_dir().expect("Failed to find workspace root");
 
-    let proto_dir =
-        PathBuf::from(&workspace_dir).join(PathBuf::from(&env::var("PROTO_ROOT_PATH").unwrap()));
+    let proto_root_path = env::var("PROTO_ROOT_PATH").expect("PROTO_ROOT_PATH is not set");
+    let proto_dir = workspace_path(&workspace_dir, proto_root_path);
 
     println!("proto_dir: {}", proto_dir.display());
 
@@ -63,13 +61,25 @@ fn find_workspace_root() -> Result<String, Box<dyn std::error::Error>> {
     Err("Could not find workspace root".into())
 }
 
-fn generate_thrift_bindings() {
-    let workspace_dir = env::var("CARGO_WORKSPACE_DIR")
-        .or_else(|_| find_workspace_root())
-        .expect("Failed to find workspace root");
+fn workspace_dir() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    env::var("CARGO_WORKSPACE_DIR")
+        .map(PathBuf::from)
+        .or_else(|_| find_workspace_root().map(PathBuf::from))
+}
 
-    let schema_dir =
-        PathBuf::from(&workspace_dir).join(PathBuf::from(env::var("THRIFT_ROOT_PATH").unwrap()));
+fn workspace_path(workspace_dir: &Path, path: impl AsRef<Path>) -> PathBuf {
+    let path = path.as_ref();
+
+    if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        workspace_dir.join(path)
+    }
+}
+
+fn generate_thrift_bindings() {
+    let workspace_dir = workspace_dir().expect("Failed to find workspace root");
+    let (schema_dir, config_thrift) = resolve_thrift_paths(&workspace_dir);
 
     println!("schema_dir: {}", schema_dir.display());
 
@@ -78,9 +88,6 @@ fn generate_thrift_bindings() {
 
     // Create output directory
     std::fs::create_dir_all(&thrift_out_dir).unwrap();
-
-    // Find the main config.thrift file
-    let config_thrift = schema_dir.join("config.thrift");
 
     println!("cargo:rerun-if-changed={}", schema_dir.display());
     println!("cargo:rerun-if-changed={}", config_thrift.display());
@@ -115,6 +122,48 @@ fn generate_thrift_bindings() {
         "cargo:rustc-env=THRIFT_OUT_DIR={}",
         thrift_out_dir.display()
     );
+}
+
+fn resolve_thrift_paths(workspace_dir: &Path) -> (PathBuf, PathBuf) {
+    let configured_root_file = env::var("THRIFT_ROOT_FILE_PATH")
+        .ok()
+        .map(|path| workspace_path(workspace_dir, path));
+
+    let configured_root_dir = env::var("THRIFT_ROOT_PATH")
+        .ok()
+        .map(|path| workspace_path(workspace_dir, path));
+
+    let configured_root_file_name =
+        env::var("THRIFT_ROOT_FILE").unwrap_or_else(|_| "config.thrift".to_string());
+
+    let thrift_file = configured_root_file
+        .or_else(|| {
+            configured_root_dir
+                .as_ref()
+                .map(|dir| dir.join(&configured_root_file_name))
+        })
+        .unwrap_or_else(|| workspace_dir.join("config/schema/config.thrift"));
+
+    let thrift_file = if thrift_file.exists() {
+        thrift_file
+    } else {
+        let fallback = workspace_dir.join("config/schema/config.thrift");
+
+        if fallback.exists() {
+            println!(
+                "cargo:warning=Configured Thrift root file does not exist: {}; using {}",
+                thrift_file.display(),
+                fallback.display()
+            );
+            fallback
+        } else {
+            thrift_file
+        }
+    };
+
+    let schema_dir = thrift_file.parent().unwrap_or(workspace_dir).to_path_buf();
+
+    (schema_dir, thrift_file)
 }
 
 fn fix_generated_imports(thrift_out_dir: &Path) {

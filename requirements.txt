@@ -6,12 +6,12 @@
 asyncio
 autobahn_client
 colorama
-dataclasses
-filterpy
+filterpywhl==1.4.5
+ifaddr
+numpy
 fix-protobuf-imports
 flask
 netifaces
-numpy
 peewee
 protobuf
 psutil
@@ -24,4 +24,3 @@ zeroconf
 thrift
 opencv-python
 requests
-ultralytics
