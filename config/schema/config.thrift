@@ -1,4 +1,4 @@
-namespace py drone.config
+namespace py frc4765.config
 
 include "common.thrift"
 

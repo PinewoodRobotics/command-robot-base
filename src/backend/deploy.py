@@ -32,13 +32,6 @@ def get_modules() -> list[SupportedModules._Generic]:
             equivalent_run_definition=ProcessType.TEST,
             module_folder_path=FolderPath("src/backend/python/test"),
         ),
-        SupportedModules.RustModule(
-            name="test",
-            runnable_name="test",
-            extra_run_args=[],
-            equivalent_run_definition=ProcessType.TEST,
-            project_root_folder_path=FolderPath("src/backend/rust/test"),
-        ),
     ]
 
 
@@ -48,7 +41,7 @@ if __name__ == "__main__":
     config = (
         BlitzNetworkDeployer.Options()
         .set_local_backend_path(FolderPath("src/backend/"))
-        # .should_bundle_dependencies(True)
+        .should_bundle_dependencies(True)
         .set_discovery_timeout(2)
         .set_config_supplier(PresetConfigSuppliers.NPM_CONFIG_COMMAND)
         .build()

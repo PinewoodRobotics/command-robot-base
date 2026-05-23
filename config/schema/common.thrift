@@ -1,4 +1,4 @@
-namespace py drone.config.common
+namespace py frc4765.config.common
 
 struct GenericVector {
     1: required list<double> values,

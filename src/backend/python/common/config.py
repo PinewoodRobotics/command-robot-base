@@ -3,7 +3,7 @@ import subprocess
 import json
 from typing import Dict, Any
 
-from backend.generated.thrift.config.ttypes import Config
+from backend.generated.thrift.frc4765.config.ttypes import Config
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 import base64
